@@ -1,0 +1,9 @@
+streamlit
+supabase
+openai
+pinecone-client
+requests
+python-dotenv
+PyPDF2
+pytest
+pytest-mock
