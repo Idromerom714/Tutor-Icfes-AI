@@ -33,7 +33,7 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
     # Si hay una foto, necesitamos un modelo que "vea" (Vision)
     if imagen_bytes:
         # GPT-4o-mini es el mejor balance costo/visión
-        model_name = "nvidia/nemotron-nano-12b-v2-vl:free"
+        model_name = "qwen/qwen3-vl-30b-a3b-thinking"
 
     headers = {
         "Authorization": f"Bearer {api_key}",
