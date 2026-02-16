@@ -43,3 +43,40 @@ def descontar_credito(email, es_imagen=False):
     
     # Actualizamos con el nuevo conteo
     supabase.table("perfiles").update({columna: nuevo_valor}).eq("email", email).execute()
+
+    def guardar_o_actualizar_chat(chat_id, email, titulo, materia, mensajes):
+        data = {
+        "email_usuario": email,
+        "materia": materia,
+        "mensajes": mensajes,
+        "actualizado_el": datetime.now(pytz.timezone('America/Bogota')).isoformat()
+    }
+    
+    # Solo incluimos el título si el chat es nuevo para no sobreescribir títulos personalizados
+        if not chat_id:
+            data["titulo"] = titulo
+    
+        if chat_id:
+            return supabase.table("historial_chats").update(data).eq("id", chat_id).execute()
+        else:
+            return supabase.table("historial_chats").insert(data).execute()
+    
+        if chat_id:
+        # Actualizar chat existente
+            return supabase.table("historial_chats").update(data).eq("id", chat_id).execute()
+        else:
+        # Crear chat nuevo
+            return supabase.table("historial_chats").insert(data).execute()
+
+def listar_chats_usuario(email):
+    """Trae la lista de títulos de chats previos del usuario."""
+    return supabase.table("historial_chats") \
+        .select("id, titulo, materia, actualizado_el") \
+        .eq("email_usuario", email) \
+        .order("actualizado_el", desc=True) \
+        .execute()
+
+def cargar_chat_completo(chat_id):
+    """Trae todos los mensajes de un chat específico."""
+    res = supabase.table("historial_chats").select("*").eq("id", chat_id).single().execute()
+    return res.data

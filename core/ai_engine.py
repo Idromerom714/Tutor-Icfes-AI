@@ -69,3 +69,27 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
             
     except Exception as e:
         return f"❌ Error de conexión: {str(e)}"
+    
+def generar_titulo_chat(pregunta_usuario):
+    """Genera un título corto y descriptivo basado en la primera pregunta."""
+    if "OPENROUTER_API_KEY" not in st.secrets:
+        return "Nueva Consulta"
+
+    api_key = st.secrets["OPENROUTER_API_KEY"]
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    prompt_titulo = f"Genera un título de máximo 5 palabras para esta duda académica, sin comillas ni puntos: {pregunta_usuario}"
+    
+    payload = {
+        "model": "google/gemini-2.0-flash-exp:free",
+        "messages": [{"role": "user", "content": prompt_titulo}]
+    }
+
+    try:
+        response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
+        return response.json()['choices'][0]['message']['content'].strip()
+    except:
+        return "Consulta de " + pregunta_usuario[:15] + "..."
