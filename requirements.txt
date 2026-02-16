@@ -1,7 +1,7 @@
 streamlit
 supabase
 openai
-pinecone-client
+pinecone
 requests
 python-dotenv
 PyPDF2
