@@ -73,22 +73,22 @@ else:
 
     # 2. ÁREA DE CHAT
     # 1. Inicializar el historial como un diccionario si no existe
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = {}
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = {}
 
 # 2. Si la materia actual no tiene historial, creárselo
-    if materia_seleccionada not in st.session_state.chat_history:
-        st.session_state.chat_history[materia_seleccionada] = []
+if materia_seleccionada not in st.session_state.chat_history:
+    st.session_state.chat_history[materia_seleccionada] = []
 
 # 3. Usar el historial específico de la materia
-    mensajes_actuales = st.session_state.chat_history[materia_seleccionada]
+mensajes_actuales = st.session_state.chat_history[materia_seleccionada]
 
-    for msg in mensajes_actuales:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+for msg in mensajes_actuales:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
 # ... (cuando guardes la respuesta del Profe, hazlo así:)
-    st.session_state.chat_history[materia_seleccionada].append({"role": "assistant", "content": respuesta})
+st.session_state.chat_history[materia_seleccionada].append({"role": "assistant", "content": respuesta})
 
     # 3. ENTRADA DE DUDAS (Texto y Foto)
     col1, col2 = st.columns([0.8, 0.2])
