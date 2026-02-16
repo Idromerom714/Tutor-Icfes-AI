@@ -1,5 +1,3 @@
-import streamlit as st
-from supabase import create_client
 from datetime import datetime
 import pytz # Debes añadir 'pytz' a tu requirements.txt
 
