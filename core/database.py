@@ -60,12 +60,7 @@ def guardar_o_actualizar_chat(chat_id, email, titulo, materia, mensajes):
         return supabase.table("historial_chats").update(data).eq("id", chat_id).execute()
     else:
         return supabase.table("historial_chats").insert(data).execute()
-    
-        #if chat_id:
-         #   return supabase.table("historial_chats").update(data).eq("id", chat_id).execute()
-        #else:
-        # Crear chat nuevo
-          #  return supabase.table("historial_chats").insert(data).execute()
+ 
 
 def listar_chats_usuario(email):
     """Trae la lista de títulos de chats previos del usuario."""

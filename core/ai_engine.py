@@ -25,18 +25,18 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
     # --- LÓGICA DE SELECCIÓN DE MODELO (Cerebro Dinámico) ---
     if imagen_bytes:
         # Si hay foto, priorizamos visión multimodal
-        model_name = "mistralai/mistral-small-3.1-24b-instruct:free"
+        model_name = "google/gemma-3-27b-it:free"
     elif materia in ["Matemáticas", "Ciencias Naturales"]:
         # Razonamiento puro para ciencias
-        model_name = "mistralai/mistral-small-3.1-24b-instruct:free" 
+        model_name = "google/gemma-3-27b-it:free" 
     else:
         # Velocidad para lo demás
-        model_name = "mistralai/mistral-small-3.1-24b-instruct:free"
+        model_name = "google/gemma-3-27b-it:free"
 
     headers = {
         "Authorization": f"Bearer {api_key}",
         "HTTP-Referer": "https://profesaber.streamlit.app",
-        "X-Title": "El Profe Saber",
+        "X-Title": "El Profe Saber 500",
         "Content-Type": "application/json"
     }
     
