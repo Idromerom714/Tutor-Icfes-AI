@@ -8,7 +8,7 @@ from core.database import (
     cargar_chat_completo
 )
 from core.rag_search import buscar_contexto_icfes
-from core.ai_engine import llamar_profe_saber, generar_titulo_chat # Importamos la nueva función
+from core.ai_engine import llamar_profe_saber, generar_titulo_chat
 
 # Configuración de página (Medellín Vibes)
 st.set_page_config(page_title="El Profe Saber - Prepárate para la U", page_icon="🎓")
@@ -60,7 +60,9 @@ else:
         res_historial = listar_chats_usuario(user['email'])
         if res_historial.data:
             for chat in res_historial.data:
-                if st.button(f"{chat['materia']}: {chat['titulo']}", key=chat['id'], use_container_width=True):
+                # Truncar título para que quepa en el botón
+                titulo_corto = f"{chat['materia']}: {chat['titulo'][:15]}..."
+                if st.button(titulo_corto, key=chat['id'], use_container_width=True):
                     datos_chat = cargar_chat_completo(chat['id'])
                     st.session_state.chat_id_actual = chat['id']
                     st.session_state.mensajes_actuales = datos_chat['mensajes']
@@ -92,67 +94,86 @@ else:
         st.markdown(f"""
         ### 🚀 ¡Hoy es un buen día para darle duro al estudio!
         Faltan pocos meses para que las pruebas **Saber 11°** pongan a prueba tu talento. Aquí en la capital de la montaña no nos rendimos, ¡así que vamos por ese puntaje global de 500!
-        
-        **¿Cómo quieres empezar hoy?**
-        1. Selecciona el área de **{materia_seleccionada}** o cambia de materia en el menú lateral.
-        2. Escribe una duda o sube una foto de ese ejercicio que te está sacando canas.
-        
-        *¡Hágale pues, que el examen no se gana solo!* 🎓🔥
         """)
     else:
         for msg in st.session_state.mensajes_actuales:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
 
-    # 3. ENTRADA DE DUDAS
-    pregunta_txt = st.chat_input("Escribe tu duda...")
-    foto = st.file_uploader("📸 Sube una foto", type=['jpg', 'jpeg', 'png'], label_visibility="collapsed")
-
-    if pregunta_txt or foto:
-        usando_foto = bool(foto)
-        if (usando_foto and user['imagenes_usadas'] < limite_i) or (not usando_foto and user['preguntas_usadas'] < limite_p):
-            
-            texto_usuario = pregunta_txt if pregunta_txt else "Analiza esta imagen, profe."
-            st.session_state.mensajes_actuales.append({"role": "user", "content": texto_usuario})
-            st.chat_message("user").write(texto_usuario)
-            
-            with st.spinner("El Profe está pensando..."):
-                img_bytes = foto.read() if usando_foto else None
-                contexto = buscar_contexto_icfes(texto_usuario, materia_seleccionada)
-                respuesta = llamar_profe_saber(pregunta_txt, contexto, img_bytes, materia=materia_seleccionada)
-                
-                with st.chat_message("assistant"):
-                    st.markdown(respuesta)
-                
-                st.session_state.mensajes_actuales.append({"role": "assistant", "content": respuesta})
-                
-                # --- Lógica de Título Inteligente y Persistencia ---
-                if not st.session_state.chat_id_actual:
-                    with st.spinner("Poniéndole nombre a tu estudio..."):
-                        resumen_input = pregunta_txt if pregunta_txt else "Análisis visual"
-                        titulo_chat = generar_titulo_chat(resumen_input)
-                else:
-                    titulo_chat = "Actualizando..." # No afectará gracias al cambio en database.py
-
-                res_db = guardar_o_actualizar_chat(
-                    chat_id=st.session_state.chat_id_actual,
-                    email=user['email'],
-                    titulo=titulo_chat,
-                    materia=materia_seleccionada,
-                    mensajes=st.session_state.mensajes_actuales
-                )
-                
-                if not st.session_state.chat_id_actual:
-                    st.session_state.chat_id_actual = res_db.data[0]['id']
-
-                # Descuento de créditos
-                if usando_foto:
-                    descontar_credito(user['email'], es_imagen=True)
-                    user['imagenes_usadas'] += 1
-                else:
-                    descontar_credito(user['email'], es_imagen=False)
-                    user['preguntas_usadas'] += 1
-                
+    # 3. ENTRADA DE DUDAS (Centro de Comando)
+    st.divider()
+    with st.container():
+        pregunta_txt = st.chat_input("Escribe tu duda aquí...")
+        foto = st.file_uploader("📸 Sube una foto (opcional)", type=['jpg', 'jpeg', 'png'])
+        
+        col_btn1, col_btn2 = st.columns([0.7, 0.3])
+        with col_btn1:
+            enviar = st.button("🚀 Enviar al Profe Saber", use_container_width=True, type="primary")
+        with col_btn2:
+            # Botón agregado sin consulta: permite limpiar la imagen rápidamente
+            if st.button("🗑️ Limpiar", use_container_width=True):
                 st.rerun()
+
+    if enviar:
+        if pregunta_txt or foto:
+            usando_foto = bool(foto)
+            # Validación de energía
+            p_ok = user['preguntas_usadas'] < limite_p
+            i_ok = user['imagenes_usadas'] < limite_i
+
+            if (usando_foto and i_ok) or (not usando_foto and p_ok):
+                texto_usuario = pregunta_txt if pregunta_txt else "Profe, analice esta imagen."
+                
+                # Pre-visualización inmediata
+                st.chat_message("user").write(texto_usuario)
+                
+                with st.spinner("El Profe está analizando..."):
+                    img_bytes = foto.read() if usando_foto else None
+                    contexto = buscar_contexto_icfes(texto_usuario, materia_seleccionada)
+                    
+                    # Llamada a la IA
+                    respuesta = llamar_profe_saber(pregunta_txt, contexto, img_bytes, materia=materia_seleccionada)
+                    
+                    # --- FILTRO DE ERROR: NO COBRAR SI FALLA ---
+                    if "⚠️ El Profe tuvo un problema" in respuesta or "❌ Error" in respuesta:
+                        st.error(respuesta)
+                        st.stop() # Aquí evitamos que el código siga y descuente el crédito
+
+                    # Si llegamos aquí, la respuesta fue exitosa
+                    with st.chat_message("assistant"):
+                        st.markdown(respuesta)
+                    
+                    st.session_state.mensajes_actuales.append({"role": "user", "content": texto_usuario})
+                    st.session_state.mensajes_actuales.append({"role": "assistant", "content": respuesta})
+                    
+                    # Persistencia y Título
+                    if not st.session_state.chat_id_actual:
+                        with st.spinner("Poniéndole nombre..."):
+                            titulo_chat = generar_titulo_chat(pregunta_txt if pregunta_txt else "Análisis visual")
+                    else:
+                        titulo_chat = "Actualizando..."
+
+                    res_db = guardar_o_actualizar_chat(
+                        chat_id=st.session_state.chat_id_actual,
+                        email=user['email'],
+                        titulo=titulo_chat,
+                        materia=materia_seleccionada,
+                        mensajes=st.session_state.mensajes_actuales
+                    )
+                    
+                    if not st.session_state.chat_id_actual:
+                        st.session_state.chat_id_actual = res_db.data[0]['id']
+
+                    # --- COBRO SEGURO POST-RESPUESTA ---
+                    if usando_foto:
+                        descontar_credito(user['email'], es_imagen=True)
+                        user['imagenes_usadas'] += 1
+                    else:
+                        descontar_credito(user['email'], es_imagen=False)
+                        user['preguntas_usadas'] += 1
+                    
+                    st.rerun()
+            else:
+                st.error("⚠️ Energía insuficiente.")
         else:
-            st.error("⚠️ Sin energía suficiente.")
+            st.warning("Escribe algo o sube una foto antes de enviar.")
