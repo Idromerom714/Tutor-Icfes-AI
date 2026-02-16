@@ -44,8 +44,8 @@ def descontar_credito(email, es_imagen=False):
     # Actualizamos con el nuevo conteo
     supabase.table("perfiles").update({columna: nuevo_valor}).eq("email", email).execute()
 
-    def guardar_o_actualizar_chat(chat_id, email, titulo, materia, mensajes):
-        data = {
+def guardar_o_actualizar_chat(chat_id, email, titulo, materia, mensajes):
+    data = {
         "email_usuario": email,
         "materia": materia,
         "mensajes": mensajes,
@@ -53,13 +53,13 @@ def descontar_credito(email, es_imagen=False):
     }
     
     # Solo incluimos el título si el chat es nuevo para no sobreescribir títulos personalizados
-        if not chat_id:
-            data["titulo"] = titulo
+    if not chat_id:
+        data["titulo"] = titulo
     
-        if chat_id:
-            return supabase.table("historial_chats").update(data).eq("id", chat_id).execute()
-        else:
-            return supabase.table("historial_chats").insert(data).execute()
+    if chat_id:
+        return supabase.table("historial_chats").update(data).eq("id", chat_id).execute()
+    else:
+        return supabase.table("historial_chats").insert(data).execute()
     
         #if chat_id:
          #   return supabase.table("historial_chats").update(data).eq("id", chat_id).execute()
