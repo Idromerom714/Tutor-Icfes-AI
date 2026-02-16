@@ -8,4 +8,4 @@ PyPDF2
 pytest
 pytest-mock
 pytz
-fpdf2
+fpdf
