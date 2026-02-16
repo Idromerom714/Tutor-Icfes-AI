@@ -3,6 +3,8 @@ import base64
 import requests
 
 PROFE_SABER_PROMPT = """
+SÉ ESTRICTO: TODA TU RESPUESTA DEBE SER EN ESPAÑOL DE COLOMBIA. 
+Under no circumstances answer in English. Si ves texto en inglés, tradúcelo mentalmente y responde en español.
 Eres "El Profe Saber", el tutor de IA más teso de Colombia, experto en ICFES. 
 Tu misión es entrenar cerebros usando el método socrático, no dar respuestas.
 
@@ -21,19 +23,15 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
     api_key = st.secrets["OPENROUTER_API_KEY"]
     
     # --- LÓGICA DE SELECCIÓN DE MODELO (Cerebro Dinámico) ---
-    # 1. Si es Matemáticas o Física (Ciencias Naturales), usamos razonamiento pesado
-    if materia in ["Matemáticas", "Ciencias Naturales"]:
-        # DeepSeek R1 o Qwen Thinking son los reyes del razonamiento ahora
-        model_name = "deepseek/deepseek-r1-0528:free" 
-    else:
-        # 2. Para el resto (Sociales, Inglés, etc.), priorizamos velocidad
-        model_name = "openai/gpt-oss-120b:free"
-
-    # --- SOBRESCRITURA POR IMAGEN ---
-    # Si hay una foto, necesitamos un modelo que "vea" (Vision)
     if imagen_bytes:
-        # GPT-4o-mini es el mejor balance costo/visión
-        model_name = "qwen/qwen3-vl-30b-a3b-thinking"
+        # Si hay foto, priorizamos visión multimodal
+        model_name = "google/gemini-2.0-flash-exp:free"
+    elif materia in ["Matemáticas", "Ciencias Naturales"]:
+        # Razonamiento puro para ciencias
+        model_name = "deepseek/deepseek-r1:free" 
+    else:
+        # Velocidad para lo demás
+        model_name = "google/gemini-2.0-flash-exp:free"
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -64,11 +62,10 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
         res_json = response.json()
 
         if "choices" in res_json:
-            # Algunos modelos de razonamiento (thinking) incluyen el proceso en el contenido
             return res_json['choices'][0]['message']['content']
         else:
             error_msg = res_json.get("error", {}).get("message", "Error de OpenRouter")
-            return f"⚠️ El Profe tuvo un problema con el modelo {model_name}: {error_msg}"
+            return f"⚠️ El Profe tuvo un problema: {error_msg}"
             
     except Exception as e:
         return f"❌ Error de conexión: {str(e)}"
