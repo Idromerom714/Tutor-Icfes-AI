@@ -1,4 +1,4 @@
-from fpdf import FPDF
+from fpdf2 import FPDF
 from datetime import datetime
 
 class PDF(FPDF):
