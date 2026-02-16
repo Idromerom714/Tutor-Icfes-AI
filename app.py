@@ -130,7 +130,7 @@ else:
     # Lógica de disparo: Se activa con el Enter del chat_input O con el botón Enviar
     if enviar or pregunta_input:
         # Priorizamos el texto del chat_input si existe, de lo contrario usamos un placeholder
-        texto_final = pregunta_input if pregunta_input else "Analice la imagen adjunta, Profe."
+        texto_final = pregunta_input if pregunta_input else "Analice la imagen adjunta, tengo dudas sobre este tema, Profe."
         
         if texto_final or foto:
             usando_foto = bool(foto)
