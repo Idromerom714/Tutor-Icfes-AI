@@ -25,13 +25,13 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
     # --- LÓGICA DE SELECCIÓN DE MODELO (Cerebro Dinámico) ---
     if imagen_bytes:
         # Si hay foto, priorizamos visión multimodal
-        model_name = "google/gemini-2.0-flash-exp:free"
+        model_name = "mistralai/mistral-small-3.1-24b-instruct:free"
     elif materia in ["Matemáticas", "Ciencias Naturales"]:
         # Razonamiento puro para ciencias
-        model_name = "deepseek/deepseek-r1:free" 
+        model_name = "mistralai/mistral-small-3.1-24b-instruct:free" 
     else:
         # Velocidad para lo demás
-        model_name = "google/gemini-2.0-flash-exp:free"
+        model_name = "mistralai/mistral-small-3.1-24b-instruct:free"
 
     headers = {
         "Authorization": f"Bearer {api_key}",
