@@ -36,7 +36,7 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None):
             # AQUÍ SE AÑADE EL SYSTEM PROMPT
             {"role": "system", "content": PROFE_SABER_PROMPT},
             # Y aquí la duda específica con su contexto
-            {"role": "user", "content": contenido_usuario}
+            {"role": "user", "content": contenido}
         ]
     }
 
