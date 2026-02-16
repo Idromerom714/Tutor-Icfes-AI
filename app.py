@@ -14,23 +14,21 @@ if "autenticado" not in st.session_state:
 # --- LÓGICA DE LOGIN ---
 if not st.session_state.autenticado:
     st.title("🎓 El Profe Saber")
-    st.subheader("Tu pase directo a la Nacho o la UdeA")
     
-    with st.container(border=True):
+    # Usar un formulario evita que el botón sea "perezoso"
+    with st.form("login_form"):
         email_input = st.text_input("Correo electrónico")
-        pin_input = st.text_input("PIN de acceso (4 dígitos)", type="password")
+        pin_input = st.text_input("PIN de acceso", type="password")
+        submit = st.form_submit_button("Entrar a estudiar", use_container_width=True)
         
-        if st.button("Entrar a estudiar", use_container_width=True):
-            try:
-                user = obtener_datos_usuario(email_input)
-                if user and str(user['pin']) == pin_input:
-                    st.session_state.user = user
-                    st.session_state.autenticado = True
-                    st.rerun()
-                else:
-                    st.error("Pilas, el PIN o el correo no coinciden.")
-            except:
-                st.error("No te encontramos en la base de datos. ¿Ya pagaste tu suscripción?")
+        if submit:
+            user = obtener_datos_usuario(email_input)
+            if user and str(user['pin']) == pin_input:
+                st.session_state.user = user
+                st.session_state.autenticado = True
+                st.rerun() # Esto ahora funcionará al primer toque
+            else:
+                st.error("PIN o correo incorrectos.")
 
 # --- APP PRINCIPAL ---
 else:
@@ -74,14 +72,23 @@ else:
             st.rerun()
 
     # 2. ÁREA DE CHAT
-    st.title(f"Módulo de {materia_seleccionada}")
-    
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    # 1. Inicializar el historial como un diccionario si no existe
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = {}
 
-    for msg in st.session_state.messages:
+# 2. Si la materia actual no tiene historial, creárselo
+    if materia_seleccionada not in st.session_state.chat_history:
+        st.session_state.chat_history[materia_seleccionada] = []
+
+# 3. Usar el historial específico de la materia
+    mensajes_actuales = st.session_state.chat_history[materia_seleccionada]
+
+    for msg in mensajes_actuales:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
+
+# ... (cuando guardes la respuesta del Profe, hazlo así:)
+    st.session_state.chat_history[materia_seleccionada].append({"role": "assistant", "content": respuesta})
 
     # 3. ENTRADA DE DUDAS (Texto y Foto)
     col1, col2 = st.columns([0.8, 0.2])
