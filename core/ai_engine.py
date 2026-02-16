@@ -14,7 +14,7 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None):
 
     api_key = st.secrets["OPENROUTER_API_KEY"]
     # Probemos con el modelo 2.0 que es más estable y sigue siendo gratis
-    model_name = "google/gemini-2.0-flash-exp:free" 
+    model_name = "openai/gpt-oss-120b:free" 
     
     headers = {
         "Authorization": f"Bearer {api_key}",
