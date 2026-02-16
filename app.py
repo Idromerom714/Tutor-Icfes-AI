@@ -62,7 +62,7 @@ else:
         if st.session_state.mensajes_actuales:
             st.subheader("📥 Exportar")
             try:
-                pdf_bytes = generar_pdf_estudio(st.session_state.mensajes_actuales, materia_seleccionada if 'materia_seleccionada' in locals() else "General")
+                pdf_bytes = generar_pdf_estudio(st.session_state.mensajes_actuales, materia if 'materia' in locals() else "General")
                 st.download_button(
                     label="Descargar Resumen PDF",
                     data=pdf_bytes,
