@@ -61,12 +61,11 @@ def descontar_credito(email, es_imagen=False):
         else:
             return supabase.table("historial_chats").insert(data).execute()
     
-        if chat_id:
-        # Actualizar chat existente
-            return supabase.table("historial_chats").update(data).eq("id", chat_id).execute()
-        else:
+        #if chat_id:
+         #   return supabase.table("historial_chats").update(data).eq("id", chat_id).execute()
+        #else:
         # Crear chat nuevo
-            return supabase.table("historial_chats").insert(data).execute()
+          #  return supabase.table("historial_chats").insert(data).execute()
 
 def listar_chats_usuario(email):
     """Trae la lista de títulos de chats previos del usuario."""
