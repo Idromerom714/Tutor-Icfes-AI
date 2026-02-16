@@ -1,4 +1,4 @@
-import st from streamlit
+import streamlit as st
 from openai import OpenAI
 from pinecone import Pinecone
 
