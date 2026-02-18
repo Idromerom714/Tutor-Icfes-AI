@@ -31,7 +31,7 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
     # --- LÓGICA DE SELECCIÓN DE MODELO (Prioridad Materia + Fix Visión) ---
     if materia in ["Sociales", "Lectura Crítica"]:
         # Grok es multimodal, se mantiene siempre para análisis crítico (8⚡)
-        model_name = "x-ai/grok-2-vision-1212"
+        model_name = "x-ai/grok-4.1-fast"
     
     elif materia == "Matemáticas":
         if imagen_bytes:
