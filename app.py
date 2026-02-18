@@ -75,4 +75,53 @@ else:
                 st.caption("⚠️ PDF no disponible en este momento.")
 
         st.divider()
-        materia_seleccionada = st.selectbox
+        materia_seleccionada = st.selectbox(
+            "Materia actual:", 
+            ["Matemáticas", "Lectura Crítica", "Sociales", "Ciencias Naturales", "Inglés"]
+        )
+        st.session_state.materia_activa = materia_seleccionada
+
+    # --- ÁREA DE CHAT ---
+    for msg in st.session_state.mensajes_actuales:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    # --- ENTRADA DE DUDAS ---
+    st.divider()
+    foto = st.file_uploader("📸 Añadir imagen (opcional)", type=['jpg', 'jpeg', 'png'])
+    pregunta_input = st.chat_input("Escribe tu duda...")
+    
+    if pregunta_input:
+        # Lógica de costos
+        costo_base = 8 if materia_seleccionada in ["Sociales", "Lectura Crítica"] else 1
+        plus_foto = 5 if foto else 0
+        total_a_pagar = costo_base + plus_foto
+
+        if creditos >= total_a_pagar:
+            # Mostrar mensaje del usuario inmediatamente
+            with st.chat_message("user"):
+                st.markdown(pregunta_input)
+            
+            with st.spinner(f"El Profe analiza ({total_a_pagar}⚡)..."):
+                img_bytes = foto.read() if foto else None
+                contexto = buscar_contexto_icfes(pregunta_input, materia_seleccionada)
+                respuesta = llamar_profe_saber(pregunta_input, contexto, img_bytes, materia=materia_seleccionada)
+                
+                if "⚠️" in respuesta:
+                    st.error(respuesta)
+                else:
+                    st.session_state.mensajes_actuales.append({"role": "user", "content": pregunta_input})
+                    st.session_state.mensajes_actuales.append({"role": "assistant", "content": respuesta})
+                    
+                    # Persistencia en DB
+                    titulo = generar_titulo_chat(pregunta_input) if not st.session_state.chat_id_actual else "Actualizando..."
+                    res_db = guardar_o_actualizar_chat(st.session_state.chat_id_actual, user['email'], titulo, materia_seleccionada, st.session_state.mensajes_actuales)
+                    
+                    if not st.session_state.chat_id_actual:
+                        st.session_state.chat_id_actual = res_db.data[0]['id']
+                    
+                    # Cobro de energía
+                    descontar_energia(user['email'], total_a_pagar)
+                    st.rerun()
+        else:
+            st.error(f"Necesitas {total_a_pagar}⚡ de energía. ¡Recarga para seguir!")
