@@ -65,15 +65,24 @@ else:
             num_msgs = len(st.session_state.mensajes_actuales)
             st.caption(f"📊 {num_msgs} mensaje(s) en conversación")
             
+            # Expandible con mensajes (PRIMERO, para debug)
+            with st.expander("🔍 Ver mensajes en conversación"):
+                for idx, msg in enumerate(st.session_state.mensajes_actuales):
+                    rol = "👤 ESTUDIANTE" if msg.get("role") == "user" else "🤖 PROFE"
+                    contenido = msg.get("content", "")
+                    contenido_preview = (contenido[:150] + "...") if len(contenido) > 150 else contenido
+                    st.text(f"\n{rol}:\n{contenido_preview}")
+            
             try:
                 m_pdf = st.session_state.get('materia_activa', 'General')
-                pdf_bytes = generar_pdf_estudio(st.session_state.mensajes_actuales, m_pdf)
+                with st.spinner("🔄 Generando PDF..."):
+                    pdf_bytes = generar_pdf_estudio(st.session_state.mensajes_actuales, m_pdf)
                 
                 # Validar que el PDF se generó correctamente
                 if pdf_bytes is None:
-                    st.error("⚠️ No se pudo generar el PDF. Intenta de nuevo.")
+                    st.error("❌ No se pudo generar el PDF. Revisa los logs del servidor.")
                 elif not isinstance(pdf_bytes, (bytes, bytearray)):
-                    st.error("⚠️ Error: formato de PDF inválido.")
+                    st.error(f"❌ Error: formato de PDF inválido. Tipo: {type(pdf_bytes)}")
                 else:
                     st.download_button(
                         label="📄 Descargar Resumen PDF",
@@ -84,14 +93,10 @@ else:
                     )
                     st.success(f"✅ PDF listo ({len(pdf_bytes)} bytes)")
             except Exception as e:
-                st.error(f"⚠️ Error al generar PDF: {str(e)}")
-            
-            # Debug: expandible con mensajes
-            with st.expander("🔍 Ver mensajes en conversación"):
-                for idx, msg in enumerate(st.session_state.mensajes_actuales):
-                    rol = "👤 ESTUDIANTE" if msg.get("role") == "user" else "🤖 PROFE"
-                    contenido_preview = msg.get("content", "")[:100] + "..." if len(msg.get("content", "")) > 100 else msg.get("content", "")
-                    st.text(f"{rol}: {contenido_preview}")
+                st.error(f"❌ Error al generar PDF: {str(e)}")
+                import traceback
+                with st.expander("📋 Detalles del error"):
+                    st.code(traceback.format_exc())
 
         st.divider()
         
