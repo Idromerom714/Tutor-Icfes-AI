@@ -18,6 +18,8 @@ st.set_page_config(page_title="El Profe Saber", page_icon="🎓")
 if "autenticado" not in st.session_state: st.session_state.autenticado = False
 if "chat_id_actual" not in st.session_state: st.session_state.chat_id_actual = None
 if "mensajes_actuales" not in st.session_state: st.session_state.mensajes_actuales = []
+if "materia_anterior" not in st.session_state: st.session_state.materia_anterior = None
+if "materia_activa" not in st.session_state: st.session_state.materia_activa = "Matemáticas"
 
 if not st.session_state.autenticado:
     # --- LOGIN ---
@@ -50,36 +52,73 @@ else:
         if st.button("➕ Nueva Conversación", use_container_width=True):
             st.session_state.chat_id_actual = None
             st.session_state.mensajes_actuales = []
+            st.session_state.materia_anterior = None
             st.rerun()
 
         st.divider()
         
-        # --- FIX: EXPORTAR PDF SEGURO ---
+        # --- EXPORTAR PDF ---
         if st.session_state.mensajes_actuales:
             st.subheader("📥 Exportar")
             try:
                 m_pdf = st.session_state.get('materia_activa', 'General')
                 pdf_bytes = generar_pdf_estudio(st.session_state.mensajes_actuales, m_pdf)
                 
-                if pdf_bytes: # Solo mostramos el botón si los bytes son válidos
-                    st.download_button(
-                        label="Descargar mi Resumen",
-                        data=pdf_bytes,
-                        file_name=f"Estudio_{m_pdf}_{datetime.now().strftime('%m%d')}.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
-                else:
-                    st.caption("Generando archivo...")
-            except Exception:
-                st.caption("⚠️ PDF no disponible en este momento.")
+                st.download_button(
+                    label="📄 Descargar Resumen PDF",
+                    data=pdf_bytes,
+                    file_name=f"Estudio_{m_pdf}_{datetime.now().strftime('%m%d')}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+            except Exception as e:
+                st.error(f"⚠️ Error al generar PDF: {str(e)}")
 
         st.divider()
+        
+        # --- HISTORIAL DE CONVERSACIONES ---
+        st.subheader("📚 Historial")
+        try:
+            chats_response = listar_chats_usuario(st.session_state.user['email'])
+            if chats_response.data:
+                for chat in chats_response.data[:10]:
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        if st.button(f"💬 {chat['titulo'][:25]}", key=f"chat_{chat['id']}", use_container_width=True):
+                            chat_completo = cargar_chat_completo(chat['id'])
+                            st.session_state.chat_id_actual = chat['id']
+                            st.session_state.mensajes_actuales = chat_completo['mensajes']
+                            st.session_state.materia_activa = chat_completo['materia']
+                            st.session_state.materia_anterior = chat_completo['materia']
+                            st.rerun()
+                    with col2:
+                        st.caption(f"({chat['materia'][:3]})")
+            else:
+                st.caption("Sin conversaciones aún.")
+        except Exception:
+            st.caption("No hay historial disponible.")
+        
+        st.divider()
+        
+        materias_disponibles = ["Matemáticas", "Lectura Crítica", "Sociales", "Ciencias Naturales", "Inglés"]
+        try:
+            materia_index = materias_disponibles.index(st.session_state.materia_activa)
+        except ValueError:
+            materia_index = 0
+        
         materia_seleccionada = st.selectbox(
             "Materia actual:", 
-            ["Matemáticas", "Lectura Crítica", "Sociales", "Ciencias Naturales", "Inglés"]
+            materias_disponibles,
+            index=materia_index
         )
-        st.session_state.materia_activa = materia_seleccionada
+        
+        # Detectar cambio de materia y limpiar conversación
+        if materia_seleccionada != st.session_state.materia_anterior:
+            st.session_state.materia_activa = materia_seleccionada
+            st.session_state.materia_anterior = materia_seleccionada
+            st.session_state.chat_id_actual = None
+            st.session_state.mensajes_actuales = []
+            st.rerun()
 
     # --- ÁREA DE CHAT ---
     for msg in st.session_state.mensajes_actuales:
@@ -93,7 +132,7 @@ else:
     
     if pregunta_input:
         # Lógica de costos
-        costo_base = 8 if materia_seleccionada in ["Sociales", "Lectura Crítica"] else 1
+        costo_base = 8 if st.session_state.materia_activa in ["Sociales", "Lectura Crítica"] else 1
         plus_foto = 5 if foto else 0
         total_a_pagar = costo_base + plus_foto
 
@@ -104,8 +143,8 @@ else:
             
             with st.spinner(f"El Profe analiza ({total_a_pagar}⚡)..."):
                 img_bytes = foto.read() if foto else None
-                contexto = buscar_contexto_icfes(pregunta_input, materia_seleccionada)
-                respuesta = llamar_profe_saber(pregunta_input, contexto, img_bytes, materia=materia_seleccionada)
+                contexto = buscar_contexto_icfes(pregunta_input, st.session_state.materia_activa)
+                respuesta = llamar_profe_saber(pregunta_input, contexto, img_bytes, materia=st.session_state.materia_activa)
                 
                 if "⚠️" in respuesta:
                     st.error(respuesta)
@@ -115,7 +154,7 @@ else:
                     
                     # Persistencia en DB
                     titulo = generar_titulo_chat(pregunta_input) if not st.session_state.chat_id_actual else "Actualizando..."
-                    res_db = guardar_o_actualizar_chat(st.session_state.chat_id_actual, user['email'], titulo, materia_seleccionada, st.session_state.mensajes_actuales)
+                    res_db = guardar_o_actualizar_chat(st.session_state.chat_id_actual, user['email'], titulo, st.session_state.materia_activa, st.session_state.mensajes_actuales)
                     
                     if not st.session_state.chat_id_actual:
                         st.session_state.chat_id_actual = res_db.data[0]['id']
