@@ -84,27 +84,62 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
     api_key = st.secrets["OPENROUTER_API_KEY"]
     instruccion_rigor = ""
 
-    # --- LÓGICA DE SELECCIÓN DE MODELO (Prioridad Materia + Fix Visión) ---
+    # --- LÓGICA DE SELECCIÓN DE MODELO (Prioridad Materia + Visión) ---
     if materia in ["Sociales", "Lectura Crítica"]:
-        # Grok es multimodal, se mantiene siempre para análisis crítico (8⚡)
+        # Grok es multimodal, para análisis crítico
         model_name = "x-ai/grok-4.1-fast"
     
     elif materia == "Matemáticas":
         if imagen_bytes:
-            # DeepSeek no ve; usamos Llama Vision pero con REFUERZO DE RIGOR
-            model_name = "meta-llama/llama-3.2-11b-vision-instruct"
+            # Grok es superior para visión matemática (mucho mejor que Llama)
+            # Evita alucinaciones y es muy preciso en análisis de imágenes
+            model_name = "x-ai/grok-4.1-fast"
             instruccion_rigor = """
-            ⚠️ MODO RIGOR MATEMÁTICO (VISIÓN):
-            1. Transcribe detalladamente los datos y la pregunta de la imagen.
-            2. Realiza el razonamiento interno paso a paso antes de responder.
-            3. No sacrifiques precisión por brevedad. Usa lenguaje técnico.
+            🔬 MODO RIGOR MATEMÁTICO EXTREMO (CON VISIÓN):
+            
+            INSTRUCCIÓN CRÍTICA: Tu rol es analizar la imagen con máxima precisión.
+            
+            PASO 1 - LECTURA DE IMAGEN:
+            • Describe EXACTAMENTE lo que ves: números, símbolos, gráficas, variables
+            • Transcribe cada dato numérico y cada operación visible
+            • Identifica el tipo de problema: ecuación, gráfica, función, geometría, etc.
+            
+            PASO 2 - EXTRACCIÓN DE INFORMACIÓN:
+            ❌ NO hagas suposiciones sobre datos no visibles
+            ✅ SOLO usa datos que puedas verificar en la imagen
+            Identifica el tema académico basándote en lo que ves y busca en el contexto PDF:
+            • ¿Qué pregunta se formula en la imagen?
+            • ¿Qué datos están dados?
+            • ¿Qué se pide hallar?
+            
+            PASO 3 - VALIDACIÓN:
+            • Verifica tu interpretación de la imagen antes de responder
+            • Si algo no está claro, admítelo: "No logro leer claramente..."
+            • Si hay múltiples interpretaciones, menciona cuál asumes
+            
+            PASO 4 - APLICAR MÉTODO SOCRÁTICO:
+            • Guía al estudiante a VERIFICAR lo que ve en la imagen
+            • Haz preguntas sobre los datos extraídos
+            • No des respuestas, solo direcciona el análisis
+            
+            ⚠️ PROHIBICIÓN ABSOLUTA:
+            • NO alucines datos que no estén en la imagen
+            • NO asumas números si no los ves
+            • NO inventes fórmulas si no aparecen
+            • Si no estás seguro, pregunta al estudiante
+            
+            Si la imagen es borrosa, confusa o ilegible:
+            Responde: "No logro leer la imagen con claridad. ¿Puedes:
+            1. Tomarla de nuevo en mejor ángulo?
+            2. Transcribir los datos que ves?
+            3. Describir qué tipo de problema es?"
             """
         else:
-            # Solo texto: DeepSeek es el rey de la lógica (1⚡)
+            # Solo texto: DeepSeek es excelente para lógica pura
             model_name = "deepseek/deepseek-chat-v3.1"
     
     else:
-        # Ciencias, Inglés y General (1⚡)
+        # Ciencias, Inglés y General
         model_name = "google/gemini-2.0-flash-001"
 
     headers = {
