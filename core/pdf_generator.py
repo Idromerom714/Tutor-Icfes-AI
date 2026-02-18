@@ -148,16 +148,48 @@ def limpiar_contenido(texto):
     if not texto:
         return ""
     
-    # Convertir fórmulas matemáticas a notación legible (NO eliminar)
+    # Convertir fórmulas matemáticas a notación legible
     # Fórmulas en bloque: $$...$$
-    texto = re.sub(r'\$\$(.+?)\$\$', r'[FORMULA] \1 [/FORMULA]', texto, flags=re.DOTALL)
+    def limpiar_latex(match):
+        latex = match.group(1)
+        # Convertir notaciones LaTeX a ASCII legible
+        latex = latex.replace(r'\cdot', '*')     # Multiplicación
+        latex = latex.replace(r'\times', '*')    # Multiplicación
+        latex = latex.replace(r'\div', '/')      # División
+        latex = latex.replace(r'\frac{', '(')    # Fracciones - abrir
+        latex = latex.replace(r'}{', '/')        # Fracciones - división
+        latex = latex.replace(r'\sqrt', 'raiz')  # Raíz cuadrada
+        latex = latex.replace(r'\pi', 'pi')      # Pi
+        latex = latex.replace(r'\alpha', 'alfa') # Alfa
+        latex = latex.replace(r'\beta', 'beta')  # Beta
+        latex = latex.replace(r'\theta', 'theta')# Theta
+        latex = latex.replace(r'\\', ' ')        # Line breaks en LaTeX
+        return f'[FORMULA] {latex} [/FORMULA]'
+    
+    texto = re.sub(r'\$\$(.+?)\$\$', limpiar_latex, texto, flags=re.DOTALL)
+    
     # Fórmulas inline: $...$
-    texto = re.sub(r'\$(.+?)\$', r'(\1)', texto)
+    def limpiar_latex_inline(match):
+        latex = match.group(1)
+        latex = latex.replace(r'\cdot', '*')     # Multiplicación
+        latex = latex.replace(r'\times', '*')    # Multiplicación
+        latex = latex.replace(r'\div', '/')      # División
+        latex = latex.replace(r'\frac{', '(')    # Fracciones
+        latex = latex.replace(r'}{', '/')        # Fracciones
+        latex = latex.replace(r'\sqrt', 'raiz')  # Raíz cuadrada
+        latex = latex.replace(r'\pi', 'pi')      # Pi
+        latex = latex.replace(r'\alpha', 'alfa') # Alfa
+        latex = latex.replace(r'\beta', 'beta')  # Beta
+        latex = latex.replace(r'\theta', 'theta')# Theta
+        latex = latex.replace(r'\\', ' ')        # Line breaks
+        return f'({latex})'
+    
+    texto = re.sub(r'\$(.+?)\$', limpiar_latex_inline, texto)
     
     # Remover markdown manteniendo el contenido
     texto = re.sub(r'#{1,6}\s+', '', texto)  # Headers
     texto = re.sub(r'\*\*(.+?)\*\*', r'\1', texto)  # Bold
-    texto = re.sub(r'\*(.+?)\*', r'\1', texto)  # Italic
+    texto = re.sub(r'\*(.+?)\*', r'\1', texto)  # Italic (cuidado: no confundir con *)
     texto = re.sub(r'__(.+?)__', r'\1', texto)  # Bold
     texto = re.sub(r'_(.+?)_', r'\1', texto)  # Italic
     texto = re.sub(r'`(.+?)`', r'\1', texto)  # Inline code
