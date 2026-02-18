@@ -9,40 +9,24 @@ key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
 def obtener_datos_usuario(email):
-    """Obtiene datos y reinicia créditos si es un nuevo día en Colombia."""
-    # Configurar zona horaria de Medellín/Bogotá
-    tz = pytz.timezone('America/Bogota')
-    hoy = datetime.now(tz).date().isoformat()
-    
+    """Obtiene datos del usuario. El reinicio diario ahora solo afecta a quienes tengan planes gratuitos si lo deseas."""
     res = supabase.table("perfiles").select("*").eq("email", email).single().execute()
-    user = res.data
-    
-    if not user:
-        return None
-    
-    # Reinicio diario de créditos basado en hora local
-    if user['ultima_fecha'] != hoy:
-        supabase.table("perfiles").update({
-            "preguntas_usadas": 0, 
-            "imagenes_usadas": 0, 
-            "ultima_fecha": hoy
-        }).eq("email", email).execute()
-        
-        user['preguntas_usadas'] = 0
-        user['imagenes_usadas'] = 0
-        
-    return user
+    return res.data if res.data else None
 
-def descontar_credito(email, es_imagen=False):
-    """Suma 1 al contador de uso correspondiente en la base de datos."""
-    columna = "imagenes_usadas" if es_imagen else "preguntas_usadas"
+def descontar_energia(email, cantidad=1):
+    """
+    Descuenta una cantidad específica de energía del saldo total del usuario.
+    """
+    # 1. Obtenemos el saldo actual directamente de la DB para evitar colisiones
+    res = supabase.table("perfiles").select("creditos_totales").eq("email", email).single().execute()
+    if not res.data:
+        return None
+        
+    saldo_actual = res.data['creditos_totales']
+    nuevo_saldo = max(0, saldo_actual - cantidad)
     
-    # Primero obtenemos el valor actual
-    res = supabase.table("perfiles").select(columna).eq("email", email).single().execute()
-    nuevo_valor = res.data[columna] + 1
-    
-    # Actualizamos con el nuevo conteo
-    supabase.table("perfiles").update({columna: nuevo_valor}).eq("email", email).execute()
+    # 2. Actualizamos con el nuevo saldo
+    return supabase.table("perfiles").update({"creditos_totales": nuevo_saldo}).eq("email", email).execute()
 
 def guardar_o_actualizar_chat(chat_id, email, titulo, materia, mensajes):
     data = {
@@ -51,8 +35,6 @@ def guardar_o_actualizar_chat(chat_id, email, titulo, materia, mensajes):
         "mensajes": mensajes,
         "actualizado_el": datetime.now(pytz.timezone('America/Bogota')).isoformat()
     }
-    
-    # Solo incluimos el título si el chat es nuevo para no sobreescribir títulos personalizados
     if not chat_id:
         data["titulo"] = titulo
     
@@ -60,10 +42,8 @@ def guardar_o_actualizar_chat(chat_id, email, titulo, materia, mensajes):
         return supabase.table("historial_chats").update(data).eq("id", chat_id).execute()
     else:
         return supabase.table("historial_chats").insert(data).execute()
- 
 
 def listar_chats_usuario(email):
-    """Trae la lista de títulos de chats previos del usuario."""
     return supabase.table("historial_chats") \
         .select("id, titulo, materia, actualizado_el") \
         .eq("email_usuario", email) \
@@ -71,6 +51,5 @@ def listar_chats_usuario(email):
         .execute()
 
 def cargar_chat_completo(chat_id):
-    """Trae todos los mensajes de un chat específico."""
     res = supabase.table("historial_chats").select("*").eq("id", chat_id).single().execute()
     return res.data
