@@ -71,13 +71,25 @@ def generar_pdf_estudio(mensajes, materia):
                 # Cuerpo del mensaje
                 pdf.set_font("Helvetica", '', 10)
                 try:
-                    # Usar .encode() para manejar caracteres especiales
-                    contenido_seguro = contenido_limpio.encode('utf-8', 'replace').decode('utf-8')
-                    pdf.multi_cell(0, 4, contenido_seguro)
+                    # Sanitizar contenido de caracteres problemáticos
+                    contenido_sanitizado = sanitizar_para_pdf(contenido_limpio)
+                    
+                    if contenido_sanitizado and contenido_sanitizado.strip():
+                        # Dividir en líneas para mejor control
+                        lineas = contenido_sanitizado.split('\n')
+                        for linea in lineas:
+                            if linea.strip():
+                                try:
+                                    pdf.cell(0, 4, linea.strip()[:200], 0, 1)  # Máximo 200 caracteres por línea
+                                except Exception as line_err:
+                                    print(f"    -> Error en línea, saltando: {line_err}")
+                                    continue
+                    else:
+                        pdf.cell(0, 4, "[Contenido sin texto]", 0, 1)
+                        
                 except Exception as e:
-                    print(f"  -> Error en multi_cell: {e}, intentando simple")
-                    # Plan B: texto simple
-                    pdf.multi_cell(0, 4, "Contenido no disponible en este formato")
+                    print(f"  -> Error en renderizado: {e}")
+                    pdf.cell(0, 4, "[Error al mostrar contenido]", 0, 1)
                 
                 pdf.ln(3)
                 
@@ -152,3 +164,52 @@ def limpiar_contenido(texto):
     texto = re.sub(r' {2,}', ' ', texto)
     
     return texto.strip()
+
+
+def sanitizar_para_pdf(texto):
+    """
+    Sanitiza texto para que sea compatible con FPDF y Helvetica.
+    Reemplaza caracteres problemáticos por versiones ASCII seguras.
+    """
+    if not texto:
+        return ""
+    
+    # Reemplazos de caracteres especiales por versiones ASCII
+    reemplazos = {
+        '–': '-',  # En dash
+        '—': '-',  # Em dash
+        ''': "'",  # Comilla simple curva
+        ''': "'",  # Comilla simple curva
+        '"': '"',  # Comilla doble curva izquierda
+        '"': '"',  # Comilla doble curva derecha
+        '«': '"',  # Comilla angular
+        '»': '"',  # Comilla angular
+        '…': '...',  # Elipsis
+        '√': 'raiz',  # Raíz cuadrada
+        '∫': 'integral',  # Integral
+        '∞': 'infinito',  # Infinito
+        '≈': '~',  # Aproximado
+        '≠': '!=',  # No igual
+        '≤': '<=',  # Menor o igual
+        '≥': '>=',  # Mayor o igual
+        '×': 'x',  # Multiplicación
+        '÷': '/',  # División
+    }
+    
+    for original, reemplazo in reemplazos.items():
+        texto = texto.replace(original, reemplazo)
+    
+    # Remover emojis y caracteres de control Unicode problemáticos
+    texto = ''.join(
+        char if ord(char) < 128 or ord(char) >= 160 else ' '
+        for char in texto
+        if ord(char) != 8  # backspace
+    )
+    
+    # Codificar y decodificar para eliminar caracteres no ASCII
+    try:
+        texto = texto.encode('ascii', 'ignore').decode('ascii')
+    except Exception:
+        pass
+    
+    return texto
