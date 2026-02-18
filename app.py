@@ -60,6 +60,11 @@ else:
         # --- EXPORTAR PDF ---
         if st.session_state.mensajes_actuales:
             st.subheader("📥 Exportar")
+            
+            # Debug: mostrar cantidad de mensajes
+            num_msgs = len(st.session_state.mensajes_actuales)
+            st.caption(f"📊 {num_msgs} mensaje(s) en conversación")
+            
             try:
                 m_pdf = st.session_state.get('materia_activa', 'General')
                 pdf_bytes = generar_pdf_estudio(st.session_state.mensajes_actuales, m_pdf)
@@ -77,8 +82,16 @@ else:
                         mime="application/pdf",
                         use_container_width=True
                     )
+                    st.success(f"✅ PDF listo ({len(pdf_bytes)} bytes)")
             except Exception as e:
                 st.error(f"⚠️ Error al generar PDF: {str(e)}")
+            
+            # Debug: expandible con mensajes
+            with st.expander("🔍 Ver mensajes en conversación"):
+                for idx, msg in enumerate(st.session_state.mensajes_actuales):
+                    rol = "👤 ESTUDIANTE" if msg.get("role") == "user" else "🤖 PROFE"
+                    contenido_preview = msg.get("content", "")[:100] + "..." if len(msg.get("content", "")) > 100 else msg.get("content", "")
+                    st.text(f"{rol}: {contenido_preview}")
 
         st.divider()
         
