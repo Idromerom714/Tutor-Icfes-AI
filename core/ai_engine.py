@@ -30,13 +30,13 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
     # --- LÓGICA DE SELECCIÓN DE MODELO (Alineada con Costos de Energía) ---
     if materia in ["Sociales", "Lectura Crítica"]:
         # Modelo premium para análisis crítico (Costo: 8⚡)
-        model_name = "x-ai/grok-2-1212" 
+        model_name = "x-ai/grok-4.1-fast" 
     elif materia == "Matemáticas":
         # Razonamiento lógico avanzado (Costo: 1⚡)
-        model_name = "deepseek/deepseek-r1:free"
+        model_name = "deepseek/deepseek-r1-0528:free"
     else:
         # Velocidad y visión para lo demás (Costo: 1⚡)
-        model_name = "google/gemini-2.0-flash-001"
+        model_name = "meta-llama/llama-3.2-11b-vision-instruct"
 
     headers = {
         "Authorization": f"Bearer {api_key}",
