@@ -26,17 +26,30 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
         return "❌ Error: Falta la API Key en Secrets."
 
     api_key = st.secrets["OPENROUTER_API_KEY"]
-    
-    # --- LÓGICA DE SELECCIÓN DE MODELO (Alineada con Costos de Energía) ---
+    instruccion_rigor = ""
+
+    # --- LÓGICA DE SELECCIÓN DE MODELO (Prioridad Materia + Fix Visión) ---
     if materia in ["Sociales", "Lectura Crítica"]:
-        # Modelo premium para análisis crítico (Costo: 8⚡)
-        model_name = "x-ai/grok-4.1-fast" 
+        # Grok es multimodal, se mantiene siempre para análisis crítico (8⚡)
+        model_name = "x-ai/grok-2-vision-1212"
+    
     elif materia == "Matemáticas":
-        # Razonamiento lógico avanzado (Costo: 1⚡)
-        model_name = "deepseek/deepseek-chat-v3.1"
+        if imagen_bytes:
+            # DeepSeek no ve; usamos Llama Vision pero con REFUERZO DE RIGOR
+            model_name = "meta-llama/llama-3.2-11b-vision-instruct"
+            instruccion_rigor = """
+            ⚠️ MODO RIGOR MATEMÁTICO (VISIÓN):
+            1. Transcribe detalladamente los datos y la pregunta de la imagen.
+            2. Realiza el razonamiento interno paso a paso antes de responder.
+            3. No sacrifiques precisión por brevedad. Usa lenguaje técnico.
+            """
+        else:
+            # Solo texto: DeepSeek es el rey de la lógica (1⚡)
+            model_name = "deepseek/deepseek-chat-v3.1"
+    
     else:
-        # Velocidad y visión para lo demás (Costo: 1⚡)
-        model_name = "meta-llama/llama-3.2-11b-vision-instruct"
+        # Ciencias, Inglés y General (1⚡)
+        model_name = "google/gemini-2.0-flash-001"
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -45,19 +58,20 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
         "Content-Type": "application/json"
     }
     
+    # Preparación de contenido
     contenido_usuario = [{"type": "text", "text": f"MATERIA: {materia}\nBIBLIOTECA: {contexto_pdf}\n\nDUDA: {mensaje_usuario}"}]
     
     if imagen_bytes:
-        base64_img = base64.b64encode(imagen_bytes).decode('utf-8')
+        encoded_image = base64.b64encode(imagen_bytes).decode("utf-8")
         contenido_usuario.append({
             "type": "image_url",
-            "image_url": {"url": f"data:image/jpeg;base64,{base64_img}"}
+            "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}
         })
 
     payload = {
         "model": model_name,
         "messages": [
-            {"role": "system", "content": PROFE_SABER_PROMPT},
+            {"role": "system", "content": PROFE_SABER_PROMPT + instruccion_rigor},
             {"role": "user", "content": contenido_usuario}
         ],
         "temperature": 0.7
@@ -77,6 +91,7 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
         return f"❌ Error de conexión: {str(e)}"
     
 def generar_titulo_chat(pregunta_usuario):
+    """Genera títulos rápidos usando el modelo más económico."""
     if "OPENROUTER_API_KEY" not in st.secrets:
         return "Nueva Consulta"
 
