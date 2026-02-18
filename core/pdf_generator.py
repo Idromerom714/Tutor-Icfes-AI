@@ -71,9 +71,13 @@ def generar_pdf_estudio(mensajes, materia):
         # Retornar el PDF como bytes
         pdf_output = pdf.output(dest='S')
         
-        # Asegurar que es bytes
-        if isinstance(pdf_output, str):
+        # Convertir a bytes si es necesario (puede venir como bytearray, str, o bytes)
+        if isinstance(pdf_output, bytearray):
+            pdf_output = bytes(pdf_output)
+        elif isinstance(pdf_output, str):
             pdf_output = pdf_output.encode('latin-1')
+        elif not isinstance(pdf_output, bytes):
+            raise TypeError(f"Tipo inesperado de salida PDF: {type(pdf_output)}")
         
         return pdf_output
         
