@@ -27,16 +27,16 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
 
     api_key = st.secrets["OPENROUTER_API_KEY"]
     
-    # --- LÓGICA DE SELECCIÓN DE MODELO (Cerebro Dinámico) ---
-    if imagen_bytes:
-        # Si hay foto, priorizamos visión multimodal
-        model_name = "google/gemma-3-27b-it:free"
-    elif materia in ["Matemáticas", "Ciencias Naturales"]:
-        # Razonamiento puro para ciencias
-        model_name = "google/gemma-3-27b-it:free" 
+    # --- LÓGICA DE SELECCIÓN DE MODELO (Alineada con Costos de Energía) ---
+    if materia in ["Sociales", "Lectura Crítica"]:
+        # Modelo premium para análisis crítico (Costo: 8⚡)
+        model_name = "x-ai/grok-2-1212" 
+    elif materia == "Matemáticas":
+        # Razonamiento lógico avanzado (Costo: 1⚡)
+        model_name = "deepseek/deepseek-r1:free"
     else:
-        # Velocidad para lo demás
-        model_name = "google/gemma-3-27b-it:free"
+        # Velocidad y visión para lo demás (Costo: 1⚡)
+        model_name = "google/gemini-2.0-flash-001"
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -59,7 +59,8 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
         "messages": [
             {"role": "system", "content": PROFE_SABER_PROMPT},
             {"role": "user", "content": contenido_usuario}
-        ]
+        ],
+        "temperature": 0.7
     }
 
     try:
@@ -76,20 +77,16 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
         return f"❌ Error de conexión: {str(e)}"
     
 def generar_titulo_chat(pregunta_usuario):
-    """Genera un título corto y descriptivo basado en la primera pregunta."""
     if "OPENROUTER_API_KEY" not in st.secrets:
         return "Nueva Consulta"
 
     api_key = st.secrets["OPENROUTER_API_KEY"]
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
+    headers = { "Authorization": f"Bearer {api_key}", "Content-Type": "application/json" }
     
     prompt_titulo = f"Genera un título de máximo 5 palabras para esta duda académica, sin comillas ni puntos: {pregunta_usuario}"
     
     payload = {
-        "model": "google/gemini-2.0-flash-exp:free",
+        "model": "google/gemini-2.0-flash-lite-preview-02-05:free",
         "messages": [{"role": "user", "content": prompt_titulo}]
     }
 
