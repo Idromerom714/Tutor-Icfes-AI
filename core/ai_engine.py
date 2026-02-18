@@ -33,7 +33,7 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
         model_name = "x-ai/grok-4.1-fast" 
     elif materia == "Matemáticas":
         # Razonamiento lógico avanzado (Costo: 1⚡)
-        model_name = "deepseek/deepseek-r1-0528:free"
+        model_name = "deepseek/deepseek-chat-v3.1"
     else:
         # Velocidad y visión para lo demás (Costo: 1⚡)
         model_name = "meta-llama/llama-3.2-11b-vision-instruct"
