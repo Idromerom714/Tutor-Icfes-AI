@@ -64,13 +64,19 @@ else:
                 m_pdf = st.session_state.get('materia_activa', 'General')
                 pdf_bytes = generar_pdf_estudio(st.session_state.mensajes_actuales, m_pdf)
                 
-                st.download_button(
-                    label="📄 Descargar Resumen PDF",
-                    data=pdf_bytes,
-                    file_name=f"Estudio_{m_pdf}_{datetime.now().strftime('%m%d')}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
+                # Validar que el PDF se generó correctamente
+                if pdf_bytes is None:
+                    st.error("⚠️ No se pudo generar el PDF. Intenta de nuevo.")
+                elif not isinstance(pdf_bytes, (bytes, bytearray)):
+                    st.error("⚠️ Error: formato de PDF inválido.")
+                else:
+                    st.download_button(
+                        label="📄 Descargar Resumen PDF",
+                        data=pdf_bytes,
+                        file_name=f"Estudio_{m_pdf}_{datetime.now().strftime('%m%d')}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
             except Exception as e:
                 st.error(f"⚠️ Error al generar PDF: {str(e)}")
 
