@@ -80,7 +80,15 @@ def generar_pdf_estudio(mensajes, materia):
                         for linea in lineas:
                             if linea.strip():
                                 try:
-                                    pdf.cell(0, 4, linea.strip()[:200], 0, 1)  # Máximo 200 caracteres por línea
+                                    # Usar encode/decode latin-1 para soportar acentos y ñ
+                                    linea_limpia = linea.strip()[:200]
+                                    # Codificar a latin-1 y volver a decodificar para asegurar compatibilidad
+                                    try:
+                                        linea_segura = linea_limpia.encode('latin-1', 'ignore').decode('latin-1')
+                                    except:
+                                        linea_segura = linea_limpia
+                                    
+                                    pdf.cell(0, 4, linea_segura, 0, 1)
                                 except Exception as line_err:
                                     print(f"    -> Error en línea, saltando: {line_err}")
                                     continue
@@ -135,14 +143,16 @@ def generar_pdf_estudio(mensajes, materia):
 def limpiar_contenido(texto):
     """
     Limpia el contenido de marcado Markdown y caracteres especiales problemáticos,
-    preservando el texto útil.
+    preservando acentos, ñ y convirtiendo fórmulas a notación legible.
     """
     if not texto:
         return ""
     
-    # Remover fórmulas math inline y bloques (pero preservar el concepto)
-    texto = re.sub(r'\$\$.*?\$\$', ' [fórmula] ', texto, flags=re.DOTALL)  
-    texto = re.sub(r'\$.*?\$', ' ', texto)  
+    # Convertir fórmulas matemáticas a notación legible (NO eliminar)
+    # Fórmulas en bloque: $$...$$
+    texto = re.sub(r'\$\$(.+?)\$\$', r'[FORMULA] \1 [/FORMULA]', texto, flags=re.DOTALL)
+    # Fórmulas inline: $...$
+    texto = re.sub(r'\$(.+?)\$', r'(\1)', texto)
     
     # Remover markdown manteniendo el contenido
     texto = re.sub(r'#{1,6}\s+', '', texto)  # Headers
@@ -153,10 +163,10 @@ def limpiar_contenido(texto):
     texto = re.sub(r'`(.+?)`', r'\1', texto)  # Inline code
     
     # Remover listas (pero preservar el contenido)
-    texto = re.sub(r'^[\*\-\+]\s+', '', texto, flags=re.MULTILINE)  # Bullet points
-    texto = re.sub(r'^\d+\.\s+', '', texto, flags=re.MULTILINE)  # Numbered lists
+    texto = re.sub(r'^[\*\-\+]\s+', '', texto, flags=re.MULTILINE)
+    texto = re.sub(r'^\d+\.\s+', '', texto, flags=re.MULTILINE)
     
-    # Remover tabla markdown (es complejo de mantener)
+    # Remover tabla markdown
     texto = re.sub(r'\|.*\|', '', texto, flags=re.MULTILINE)
     
     # Normalizar espacios
@@ -169,47 +179,51 @@ def limpiar_contenido(texto):
 def sanitizar_para_pdf(texto):
     """
     Sanitiza texto para que sea compatible con FPDF y Helvetica.
-    Reemplaza caracteres problemáticos por versiones ASCII seguras.
+    PRESERVA acentos (á, é, í, ó, ú) y ñ.
+    Solo reemplaza caracteres verdaderamente problemáticos.
     """
     if not texto:
         return ""
     
-    # Reemplazos de caracteres especiales por versiones ASCII
+    # Reemplazos SOLO de caracteres verdaderamente problemáticos
     reemplazos = {
-        '–': '-',  # En dash
-        '—': '-',  # Em dash
-        ''': "'",  # Comilla simple curva
-        ''': "'",  # Comilla simple curva
-        '"': '"',  # Comilla doble curva izquierda
-        '"': '"',  # Comilla doble curva derecha
-        '«': '"',  # Comilla angular
-        '»': '"',  # Comilla angular
-        '…': '...',  # Elipsis
-        '√': 'raiz',  # Raíz cuadrada
-        '∫': 'integral',  # Integral
-        '∞': 'infinito',  # Infinito
-        '≈': '~',  # Aproximado
-        '≠': '!=',  # No igual
-        '≤': '<=',  # Menor o igual
-        '≥': '>=',  # Mayor o igual
-        '×': 'x',  # Multiplicación
-        '÷': '/',  # División
+        '–': '-',      # En dash
+        '—': '-',      # Em dash
+        '…': '...',    # Elipsis
+        '√': 'raiz',   # Raíz cuadrada
+        '∫': 'integral', # Integral
+        '∞': 'infinito', # Infinito
+        '≈': '~',      # Aproximado
+        '≠': '!=',     # No igual
+        '≤': '<=',     # Menor o igual
+        '≥': '>=',     # Mayor o igual
+        '×': 'x',      # Multiplicación
+        '÷': '/',      # División
+        '⁰': '0',      # Superíndice
+        '¹': '1',      # Superíndice
+        '²': '2',      # Superíndice
+        '³': '3',      # Superíndice
     }
     
     for original, reemplazo in reemplazos.items():
         texto = texto.replace(original, reemplazo)
     
-    # Remover emojis y caracteres de control Unicode problemáticos
-    texto = ''.join(
-        char if ord(char) < 128 or ord(char) >= 160 else ' '
-        for char in texto
-        if ord(char) != 8  # backspace
-    )
+    # Remover SOLO emojis y caracteres de control verdaderamente problemáticos
+    # Preservar: acentos, ñ, caracteres latinos
+    texto_limpio = []
+    for char in texto:
+        code = ord(char)
+        # Mantener ASCII regular (32-126) y caracteres latinos extendidos (160-255)
+        if (32 <= code <= 126) or (160 <= code <= 255) or code == 10 or code == 13:
+            texto_limpio.append(char)
+        # Si es un emoji o símbolo raro, saltarlo pero mantener espacio
+        else:
+            if char not in ' ':
+                texto_limpio.append(' ')
     
-    # Codificar y decodificar para eliminar caracteres no ASCII
-    try:
-        texto = texto.encode('ascii', 'ignore').decode('ascii')
-    except Exception:
-        pass
+    texto = ''.join(texto_limpio)
     
-    return texto
+    # Normalizar espacios múltiples
+    texto = re.sub(r' {2,}', ' ', texto)
+    
+    return texto.strip()
