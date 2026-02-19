@@ -168,7 +168,14 @@ else:
             with st.spinner(f"El Profe analiza ({total_a_pagar}⚡)..."):
                 img_bytes = foto.read() if foto else None
                 contexto = buscar_contexto_icfes(pregunta_input, st.session_state.materia_activa)
-                respuesta = llamar_profe_saber(pregunta_input, contexto, img_bytes, materia=st.session_state.materia_activa)
+                # Pasar historial completo para mantener memoria de conversación
+                respuesta = llamar_profe_saber(
+                    pregunta_input, 
+                    contexto, 
+                    img_bytes, 
+                    materia=st.session_state.materia_activa,
+                    historial_mensajes=st.session_state.mensajes_actuales
+                )
                 
                 if "⚠️" in respuesta:
                     st.error(respuesta)

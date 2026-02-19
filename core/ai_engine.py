@@ -77,11 +77,25 @@ Si el estudiante pregunta algo académico desconectado:
 SÉ EXIGENTE Y MOTIVADOR A LA VEZ. Tu misión: enseñar a PENSAR, no a copiar.
 """
 
-def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia=""):
+def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia="", historial_mensajes=None):
+    """
+    Llama al modelo de IA con memoria de conversación.
+    
+    Args:
+        mensaje_usuario: La pregunta actual del estudiante
+        contexto_pdf: Contexto recuperado de los PDFs
+        imagen_bytes: Imagen opcional adjunta
+        materia: Materia actual de estudio
+        historial_mensajes: Lista de mensajes previos [{"role": "user"|"assistant", "content": "..."}]
+    """
     if "OPENROUTER_API_KEY" not in st.secrets:
         return "❌ Error: Falta la API Key en Secrets."
 
     api_key = st.secrets["OPENROUTER_API_KEY"]
+    
+    # Inicializar historial si no existe
+    if historial_mensajes is None:
+        historial_mensajes = []
     instruccion_rigor = ""
 
     # --- LÓGICA DE SELECCIÓN DE MODELO (Prioridad Materia + Visión) ---
@@ -149,22 +163,33 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
         "Content-Type": "application/json"
     }
     
-    # Preparación de contenido
-    contenido_usuario = [{"type": "text", "text": f"MATERIA: {materia}\nBIBLIOTECA: {contexto_pdf}\n\nDUDA: {mensaje_usuario}"}]
+    # Construir mensajes con historial completo
+    mensajes_completos = [{"role": "system", "content": PROFE_SABER_PROMPT + instruccion_rigor}]
+    
+    # Agregar historial previo de la conversación
+    for msg_previo in historial_mensajes:
+        # Convertir mensajes previos a formato simple de texto
+        mensajes_completos.append({
+            "role": msg_previo["role"],
+            "content": msg_previo["content"]
+        })
+    
+    # Preparar el mensaje actual con contexto
+    contenido_usuario_actual = [{"type": "text", "text": f"MATERIA: {materia}\nBIBLIOTECA: {contexto_pdf}\n\nDUDA: {mensaje_usuario}"}]
     
     if imagen_bytes:
         encoded_image = base64.b64encode(imagen_bytes).decode("utf-8")
-        contenido_usuario.append({
+        contenido_usuario_actual.append({
             "type": "image_url",
             "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}
         })
+    
+    # Agregar mensaje actual
+    mensajes_completos.append({"role": "user", "content": contenido_usuario_actual})
 
     payload = {
         "model": model_name,
-        "messages": [
-            {"role": "system", "content": PROFE_SABER_PROMPT + instruccion_rigor},
-            {"role": "user", "content": contenido_usuario}
-        ],
+        "messages": mensajes_completos,
         "temperature": 0.7
     }
 
