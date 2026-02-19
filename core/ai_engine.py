@@ -89,7 +89,7 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
         # Grok es multimodal, para análisis crítico
         model_name = "x-ai/grok-4.1-fast"
     
-    elif materia == "Matemáticas":
+    elif materia == "Matemáticas" or materia == "Física":
         if imagen_bytes:
             # Grok es superior para visión matemática (mucho mejor que Llama)
             # Evita alucinaciones y es muy preciso en análisis de imágenes

@@ -124,7 +124,7 @@ else:
         
         st.divider()
         
-        materias_disponibles = ["Matemáticas", "Lectura Crítica", "Sociales", "Ciencias Naturales", "Inglés"]
+        materias_disponibles = ["Matemáticas", "Lectura Crítica", "Sociales", "Ciencias Naturales", "Física", "Inglés"]
         try:
             materia_index = materias_disponibles.index(st.session_state.materia_activa)
         except ValueError:
