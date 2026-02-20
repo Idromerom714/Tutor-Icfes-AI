@@ -9,6 +9,34 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
+def registrar_intento_fallido(email):
+    """Suma un intento fallido y bloquea si llega a 5"""
+    res = supabase.table("perfiles")\
+        .select("intentos_fallidos")\
+        .eq("email", email).single().execute()
+    
+    if not res.data:
+        return None
+    
+    nuevos_intentos = res.data['intentos_fallidos'] + 1
+    update = {"intentos_fallidos": nuevos_intentos}
+    
+    if nuevos_intentos >= 5:
+        from datetime import datetime, timedelta
+        import pytz
+        bloqueado_hasta = datetime.now(pytz.utc) + timedelta(minutes=2)
+        update["bloqueado_hasta"] = bloqueado_hasta.isoformat()
+    
+    supabase.table("perfiles").update(update).eq("email", email).execute()
+    return nuevos_intentos
+
+def resetear_intentos(email):
+    """Limpia el contador al hacer login exitoso"""
+    supabase.table("perfiles").update({
+        "intentos_fallidos": 0,
+        "bloqueado_hasta": None
+    }).eq("email", email).execute()
+
 # Configuración de créditos diarios por plan
 CREDITOS_DIARIOS = {
     "basico": 50,      # 50 créditos diarios para plan básico

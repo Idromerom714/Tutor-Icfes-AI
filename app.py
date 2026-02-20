@@ -5,12 +5,15 @@ from core.database import (
     descontar_energia, 
     guardar_o_actualizar_chat, 
     listar_chats_usuario, 
-    cargar_chat_completo
+    cargar_chat_completo,
+    registrar_intento_fallido,
+    resetear_intentos
 )
 from core.rag_search import buscar_contexto_icfes
 from core.ai_engine import llamar_profe_saber, generar_titulo_chat
 from core.pdf_generator import generar_pdf_estudio
 from core.auth import verificar_pin
+import pytz
 
 # Configuración de página
 st.set_page_config(page_title="El Profe Saber", page_icon="🎓")
@@ -32,13 +35,38 @@ if not st.session_state.autenticado:
         pin_input = st.text_input("PIN de acceso", type="password")
         if st.form_submit_button("Entrar a estudiar", use_container_width=True):
             user = obtener_datos_usuario(email_input)
-            # DESPUÉS ✅: agregar hashing de PIN en la base de datos y verificación aquí
+
+            # Verificar bloqueo (solo si el usuario existe, sin revelar si existe)
+            if user:
+                bloqueado_hasta = user.get('bloqueado_hasta')
+                if bloqueado_hasta:
+                    ahora = datetime.now(pytz.utc)
+                    bloqueo_dt = datetime.fromisoformat(bloqueado_hasta)
+                    if ahora < bloqueo_dt:
+                        segundos = int((bloqueo_dt - ahora).total_seconds())
+                        st.error(f"🔒 Cuenta bloqueada. Espera {segundos} segundos.")
+                        st.stop()
+                    else:
+                        resetear_intentos(email_input)
+                        user = obtener_datos_usuario(email_input)
+
+            # Verificar PIN — mensaje siempre igual sin importar si el email existe o no
             if user and verificar_pin(pin_input, user['pin']):
+                resetear_intentos(email_input)
                 st.session_state.user = user
                 st.session_state.autenticado = True
                 st.rerun()
             else:
-                st.error("PIN o correo incorrectos.")
+                if user:  # Registrar intento solo si el email existe
+                    intentos = registrar_intento_fallido(email_input)
+                    restantes = max(0, 5 - intentos)
+                    if restantes == 0:
+                        st.error("🔒 Cuenta bloqueada por 2 minutos.")
+                    else:
+                        st.error(f"PIN o correo incorrectos. {restantes} intentos restantes.")
+                else:
+                    st.error("PIN o correo incorrectos.")  # Mismo mensaje, no revela si el email existe
+
 else:
     # Recargar datos del usuario para energía en tiempo real
     user = obtener_datos_usuario(st.session_state.user['email'])
@@ -82,11 +110,9 @@ else:
         if st.session_state.mensajes_actuales:
             st.subheader("📥 Exportar")
             
-            # Debug: mostrar cantidad de mensajes
             num_msgs = len(st.session_state.mensajes_actuales)
             st.caption(f"📊 {num_msgs} mensaje(s) en conversación")
             
-            # Expandible con mensajes (PRIMERO, para debug)
             with st.expander("🔍 Ver mensajes en conversación"):
                 for idx, msg in enumerate(st.session_state.mensajes_actuales):
                     rol = "👤 ESTUDIANTE" if msg.get("role") == "user" else "🤖 PROFE"
@@ -99,7 +125,6 @@ else:
                 with st.spinner("🔄 Generando PDF..."):
                     pdf_bytes = generar_pdf_estudio(st.session_state.mensajes_actuales, m_pdf)
                 
-                # Validar que el PDF se generó correctamente
                 if pdf_bytes is None:
                     st.error("❌ No se pudo generar el PDF. Revisa los logs del servidor.")
                 elif not isinstance(pdf_bytes, (bytes, bytearray)):
@@ -176,20 +201,17 @@ else:
     pregunta_input = st.chat_input("Escribe tu duda...")
     
     if pregunta_input:
-        # Lógica de costos
         costo_base = 8 if st.session_state.materia_activa in ["Sociales", "Lectura Crítica"] else 1
         plus_foto = 5 if foto else 0
         total_a_pagar = costo_base + plus_foto
 
         if creditos >= total_a_pagar:
-            # Mostrar mensaje del usuario inmediatamente
             with st.chat_message("user"):
                 st.markdown(pregunta_input)
             
             with st.spinner(f"El Profe analiza ({total_a_pagar}⚡)..."):
                 img_bytes = foto.read() if foto else None
                 contexto = buscar_contexto_icfes(pregunta_input, st.session_state.materia_activa)
-                # Pasar historial completo para mantener memoria de conversación
                 respuesta = llamar_profe_saber(
                     pregunta_input, 
                     contexto, 
@@ -204,14 +226,12 @@ else:
                     st.session_state.mensajes_actuales.append({"role": "user", "content": pregunta_input})
                     st.session_state.mensajes_actuales.append({"role": "assistant", "content": respuesta})
                     
-                    # Persistencia en DB
                     titulo = generar_titulo_chat(pregunta_input) if not st.session_state.chat_id_actual else "Actualizando..."
                     res_db = guardar_o_actualizar_chat(st.session_state.chat_id_actual, user['email'], titulo, st.session_state.materia_activa, st.session_state.mensajes_actuales)
                     
                     if not st.session_state.chat_id_actual:
                         st.session_state.chat_id_actual = res_db.data[0]['id']
                     
-                    # Cobro de energía
                     descontar_energia(user['email'], total_a_pagar)
                     st.rerun()
         else:
