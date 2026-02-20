@@ -9,4 +9,3 @@ pytest
 pytest-mock
 pytz
 fpdf2
-bycrypt
