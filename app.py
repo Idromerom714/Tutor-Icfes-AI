@@ -10,6 +10,7 @@ from core.database import (
 from core.rag_search import buscar_contexto_icfes
 from core.ai_engine import llamar_profe_saber, generar_titulo_chat
 from core.pdf_generator import generar_pdf_estudio
+from core.auth import verificar_pin
 
 # Configuración de página
 st.set_page_config(page_title="El Profe Saber", page_icon="🎓")
@@ -20,6 +21,8 @@ if "chat_id_actual" not in st.session_state: st.session_state.chat_id_actual = N
 if "mensajes_actuales" not in st.session_state: st.session_state.mensajes_actuales = []
 if "materia_anterior" not in st.session_state: st.session_state.materia_anterior = None
 if "materia_activa" not in st.session_state: st.session_state.materia_activa = "Matemáticas"
+if "creditos_anteriores" not in st.session_state: st.session_state.creditos_anteriores = 0
+if "recarga_notificada" not in st.session_state: st.session_state.recarga_notificada = False
 
 if not st.session_state.autenticado:
     # --- LOGIN ---
@@ -29,7 +32,8 @@ if not st.session_state.autenticado:
         pin_input = st.text_input("PIN de acceso", type="password")
         if st.form_submit_button("Entrar a estudiar", use_container_width=True):
             user = obtener_datos_usuario(email_input)
-            if user and str(user['pin']) == pin_input:
+            # DESPUÉS ✅: agregar hashing de PIN en la base de datos y verificación aquí
+            if user and verificar_pin(pin_input, user['pin']):
                 st.session_state.user = user
                 st.session_state.autenticado = True
                 st.rerun()
@@ -40,6 +44,18 @@ else:
     user = obtener_datos_usuario(st.session_state.user['email'])
     nombre = user['email'].split('@')[0].capitalize()
     
+    # Detectar si hubo recarga diaria
+    creditos_actuales = user.get('creditos_totales', 0)
+    if st.session_state.creditos_anteriores > 0 and creditos_actuales > st.session_state.creditos_anteriores:
+        if not st.session_state.recarga_notificada:
+            diferencia = creditos_actuales - st.session_state.creditos_anteriores
+            st.success(f"🎉 ¡Recarga diaria! +{diferencia}⚡ créditos agregados. Total: {creditos_actuales}⚡")
+            st.session_state.recarga_notificada = True
+    
+    # Actualizar créditos anteriores
+    if creditos_actuales != st.session_state.creditos_anteriores:
+        st.session_state.creditos_anteriores = creditos_actuales
+    
     # --- SIDEBAR ---
     with st.sidebar:
         st.header(f"¡Ey, {nombre}! 👋")
@@ -48,6 +64,11 @@ else:
         creditos = user.get('creditos_totales', 0)
         color_bat = "green" if creditos > 50 else "orange" if creditos > 15 else "red"
         st.markdown(f"### 🔋 Energía: :{color_bat}[{creditos} ⚡]")
+        
+        # Info del plan
+        plan = user.get('plan', 'básico').capitalize()
+        creditos_diarios = 50 if user.get('plan') == 'basico' else 150
+        st.caption(f"📦 Plan {plan} - Recarga diaria: {creditos_diarios}⚡")
         
         if st.button("➕ Nueva Conversación", use_container_width=True):
             st.session_state.chat_id_actual = None

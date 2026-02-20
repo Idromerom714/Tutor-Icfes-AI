@@ -18,8 +18,26 @@ Tutor-Icfes-AI es un tutor conversacional para preparar el examen ICFES Saber 11
 ## Visión general
 - Chat con personalidad de "El Profe Saber" y enfoque socrático.
 - RAG por materia: Matemáticas, Lectura Crítica, Sociales, Ciencias Naturales e Inglés.
-- Control de "energía" diaria por plan (básico y avanzado).
+- **Sistema de energía con recarga diaria automática** por plan (básico y avanzado).
 - Soporte para imágenes (fotos de preguntas) con análisis visual.
+
+## Sistema de Energía (Créditos)
+La aplicación usa un sistema de "energía" (créditos) que se **recarga automáticamente cada día**:
+
+### Planes Disponibles:
+- **Plan Básico**: 50⚡ diarios
+- **Plan Avanzado**: 150⚡ diarios
+
+### Costos por Operación:
+- **Pregunta simple** (texto): 1⚡
+- **Pregunta de análisis crítico** (Sociales/Lectura Crítica): 8⚡
+- **Pregunta con imagen**: +5⚡ adicionales
+
+### Recarga Automática:
+- La energía se recarga **automáticamente** cada día a las 00:00 (hora de Colombia)
+- Los créditos se **acumulan** si no se gastan (no se pierden)
+- El sistema verifica la fecha al iniciar sesión
+- Se muestra una notificación cuando hay recarga diaria
 
 ## Arquitectura
 Flujo principal de una consulta:
@@ -78,11 +96,15 @@ Se espera una tabla `perfiles` con al menos estas columnas:
 | email | text (PK) | Identificador del estudiante |
 | pin | text/int | PIN de acceso (4 dígitos) |
 | plan | text | `basico` o `avanzado` |
-| preguntas_usadas | int | Consumo diario de preguntas |
-| imagenes_usadas | int | Consumo diario de fotos |
-| ultima_fecha | date | Fecha del último reset |
+| creditos_totales | int | Saldo actual de energía/créditos |
+| ultima_fecha | date | Fecha de la última recarga |
 
-La lógica de reset diario está en [core/database.py](core/database.py).
+### Lógica de Recarga Diaria:
+La función `verificar_y_recargar_creditos()` en [core/database.py](core/database.py):
+1. Compara `ultima_fecha` con la fecha actual
+2. Si es un nuevo día, agrega los créditos del plan a `creditos_totales`
+3. Actualiza `ultima_fecha` con la fecha actual
+4. Se ejecuta automáticamente al obtener datos del usuario
 
 ## Carga de documentos
 El repositorio incluye [scripts/upload_pdfs.py](scripts/upload_pdfs.py), actualmente vacío. Se sugiere implementar un flujo que:

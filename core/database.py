@@ -1,6 +1,7 @@
+#database.py
 import streamlit as st
 from supabase import create_client
-from datetime import datetime
+from datetime import datetime, date
 import pytz
 
 # Conexión segura con Supabase
@@ -8,10 +9,66 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
+# Configuración de créditos diarios por plan
+CREDITOS_DIARIOS = {
+    "basico": 50,      # 50 créditos diarios para plan básico
+    "avanzado": 150    # 150 créditos diarios para plan avanzado
+}
+
+def verificar_y_recargar_creditos(email):
+    """
+    Verifica si es un nuevo día y recarga créditos según el plan.
+    Retorna los datos actualizados del usuario.
+    """
+    try:
+        # Obtener datos del usuario
+        res = supabase.table("perfiles").select("*").eq("email", email).single().execute()
+        if not res.data:
+            return None
+        
+        usuario = res.data
+        plan = usuario.get('plan', 'basico')
+        ultima_fecha_str = usuario.get('ultima_fecha', '2000-01-01')
+        creditos_actuales = usuario.get('creditos_totales', 0)
+        
+        # Convertir string a date
+        if isinstance(ultima_fecha_str, str):
+            ultima_fecha = datetime.strptime(ultima_fecha_str, '%Y-%m-%d').date()
+        else:
+            ultima_fecha = ultima_fecha_str
+        
+        # Fecha actual en Colombia
+        hoy = datetime.now(pytz.timezone('America/Bogota')).date()
+        
+        # Verificar si es un nuevo día
+        if hoy > ultima_fecha:
+            # Calcular créditos a agregar
+            creditos_diarios = CREDITOS_DIARIOS.get(plan, 50)
+            nuevos_creditos = creditos_actuales + creditos_diarios
+            
+            # Actualizar en la base de datos
+            supabase.table("perfiles").update({
+                "creditos_totales": nuevos_creditos,
+                "ultima_fecha": hoy.strftime('%Y-%m-%d')
+            }).eq("email", email).execute()
+            
+            print(f"✅ Recarga diaria: +{creditos_diarios}⚡ para {email} (Plan: {plan})")
+            
+            # Retornar datos actualizados
+            usuario['creditos_totales'] = nuevos_creditos
+            usuario['ultima_fecha'] = hoy.strftime('%Y-%m-%d')
+        
+        return usuario
+        
+    except Exception as e:
+        print(f"❌ Error en recarga diaria: {e}")
+        return None
+
 def obtener_datos_usuario(email):
-    """Obtiene datos y maneja el saldo de energía."""
-    res = supabase.table("perfiles").select("*").eq("email", email).single().execute()
-    return res.data if res.data else None
+    """Obtiene datos del usuario y verifica recarga diaria."""
+    # Primero verificar y recargar si es necesario
+    usuario = verificar_y_recargar_creditos(email)
+    return usuario
 
 def descontar_energia(email, cantidad=1):
     """Descuenta créditos del saldo total."""
