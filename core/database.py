@@ -99,12 +99,11 @@ def obtener_datos_usuario(email):
     return usuario
 
 def descontar_energia(email, cantidad=1):
-    """Descuenta créditos del saldo total."""
-    res = supabase.table("perfiles").select("creditos_totales").eq("email", email).single().execute()
-    if not res.data: return None
-    
-    nuevo_valor = max(0, res.data['creditos_totales'] - cantidad)
-    return supabase.table("perfiles").update({"creditos_totales": nuevo_valor}).eq("email", email).execute()
+    """Descuenta créditos atómicamente en Supabase para evitar race conditions."""
+    return supabase.rpc(
+        "descontar_creditos", 
+        {"user_email": email, "cantidad": cantidad}
+    ).execute()
 
 def guardar_o_actualizar_chat(chat_id, email, titulo, materia, mensajes):
     data = {
