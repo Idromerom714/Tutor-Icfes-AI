@@ -107,7 +107,7 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
         if imagen_bytes:
             # Grok es superior para visión matemática (mucho mejor que Llama)
             # Evita alucinaciones y es muy preciso en análisis de imágenes
-            model_name = "x-ai/grok-4.1-fast"
+            model_name = "google/gemini-2.0-flash-001"
             instruccion_rigor = """
             🔬 MODO RIGOR MATEMÁTICO EXTREMO (CON VISIÓN):
             
@@ -150,7 +150,7 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
             """
         else:
             # Solo texto: DeepSeek es excelente para lógica pura
-            model_name = "deepseek/deepseek-chat-v3.1"
+            model_name = "deepseek/deepseek-v3.2"
     
     else:
         # Ciencias, Inglés y General
