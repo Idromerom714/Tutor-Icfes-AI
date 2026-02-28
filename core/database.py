@@ -9,6 +9,10 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
+# Cliente con service role para operaciones de registro (bypasa RLS)
+service_key = st.secrets["SUPABASE_SERVICE_KEY"]
+supabase_admin = create_client(url, service_key)
+
 def registrar_intento_fallido(email):
     """Suma un intento fallido y bloquea si llega a 5"""
     res = supabase.table("perfiles")\
@@ -129,6 +133,3 @@ def cargar_chat_completo(chat_id):
     res = supabase.table("historial_chats").select("*").eq("id", chat_id).single().execute()
     return res.data
 
-# Cliente con service role para operaciones de registro (bypasa RLS)
-service_key = st.secrets["SUPABASE_SERVICE_KEY"]
-supabase_admin = create_client(url, service_key)
