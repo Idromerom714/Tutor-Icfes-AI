@@ -16,6 +16,7 @@ def telefono_valido(telefono):
 # --- ENCABEZADO ---
 st.title("📝 Crear cuenta")
 st.caption("El padre, madre o tutor debe realizar el registro.")
+st.caption("Una vez completes el formulario, nos pondremos en contacto contigo para validar tu pago y activar tu cuenta.")
 st.divider()
 
 # --- PASO 1: DATOS DEL PADRE ---
@@ -136,6 +137,7 @@ if submitted:
                     Tu cuenta está siendo revisada. Te notificaremos por correo 
                     cuando esté activa (generalmente en menos de 24 horas).
                 """)
+                
                 st.info("💡 Una vez activa tu cuenta, podrás ingresar con tu correo y PIN.")
                 
                 if st.button("Ir al login →"):
