@@ -29,15 +29,20 @@ if "creditos_anteriores" not in st.session_state: st.session_state.creditos_ante
 if "recarga_notificada" not in st.session_state: st.session_state.recarga_notificada = False
 
 if not st.session_state.autenticado:
-    # --- LOGIN ---
     st.title("🎓 El Profe Saber")
+    
+    col1, col2 = st.columns([1, 1])
+    with col2:
+        if st.button("¿No tienes cuenta? Regístrate →", use_container_width=True):
+            st.switch_page("pages/registro.py")
+    
     with st.form("login_form"):
         email_input = st.text_input("Correo electrónico")
         pin_input = st.text_input("PIN de acceso", type="password")
         if st.form_submit_button("Entrar a estudiar", use_container_width=True):
             user = obtener_datos_usuario(email_input)
 
-            # Verificar bloqueo (solo si el usuario existe, sin revelar si existe)
+            # Verificar bloqueo
             if user:
                 bloqueado_hasta = user.get('bloqueado_hasta')
                 if bloqueado_hasta:
@@ -51,14 +56,33 @@ if not st.session_state.autenticado:
                         resetear_intentos(email_input)
                         user = obtener_datos_usuario(email_input)
 
-            # Verificar PIN — mensaje siempre igual sin importar si el email existe o no
+            # Verificar PIN
             if user and verificar_pin(pin_input, user['pin']):
-                resetear_intentos(email_input)
-                st.session_state.user = user
-                st.session_state.autenticado = True
-                st.rerun()
+                # Verificar estado de la cuenta
+                estado = user.get('estado')
+                
+                if estado == 'pendiente':
+                    st.warning("""
+                        ⏳ Tu cuenta está pendiente de activación.
+                        Te contactaremos pronto para completar el pago.
+                        ¿Dudas? Escríbenos a ivanromero714@gmail.com
+                    """)
+                elif estado == 'pendiente_renovacion':
+                    st.warning("""
+                        📅 Tu plan ha vencido. Para renovar escríbenos a
+                        ivanromero714@gmail.com y seguirás estudiando sin interrupciones.
+                    """)
+                elif estado == 'suspendido':
+                    st.error("🚫 Cuenta suspendida. Contacta al administrador.")
+                elif estado == 'activo':
+                    resetear_intentos(email_input)
+                    st.session_state.user = user
+                    st.session_state.autenticado = True
+                    st.rerun()
+                else:
+                    st.error("Estado de cuenta desconocido. Contacta al administrador.")
             else:
-                if user:  # Registrar intento solo si el email existe
+                if user:
                     intentos = registrar_intento_fallido(email_input)
                     restantes = max(0, 5 - intentos)
                     if restantes == 0:
@@ -66,7 +90,7 @@ if not st.session_state.autenticado:
                     else:
                         st.error(f"PIN o correo incorrectos. {restantes} intentos restantes.")
                 else:
-                    st.error("PIN o correo incorrectos.")  # Mismo mensaje, no revela si el email existe
+                    st.error("PIN o correo incorrectos.")
 
 else:
     # Recargar datos del usuario para energía en tiempo real
