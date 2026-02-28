@@ -1,7 +1,8 @@
 # pages/registro.py
+
 import streamlit as st
 from core.auth import hashear_pin
-from core.database import supabase
+from core.database import supabase_admin as supabase
 import re
 
 st.set_page_config(page_title="Registro — Tutor ICFES", page_icon="📝")

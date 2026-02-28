@@ -128,3 +128,7 @@ def listar_chats_usuario(email):
 def cargar_chat_completo(chat_id):
     res = supabase.table("historial_chats").select("*").eq("id", chat_id).single().execute()
     return res.data
+
+# Cliente con service role para operaciones de registro (bypasa RLS)
+service_key = st.secrets["SUPABASE_SERVICE_KEY"]
+supabase_admin = create_client(url, service_key)
