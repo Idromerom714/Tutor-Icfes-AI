@@ -1,4 +1,3 @@
-#app.py
 import streamlit as st
 from datetime import datetime
 from core.database import (
@@ -8,7 +7,8 @@ from core.database import (
     listar_chats_usuario, 
     cargar_chat_completo,
     registrar_intento_fallido,
-    resetear_intentos
+    resetear_intentos,
+    obtener_estudiante
 )
 from core.rag_search import buscar_contexto_icfes
 from core.ai_engine import llamar_profe_saber, generar_titulo_chat
@@ -16,7 +16,6 @@ from core.pdf_generator import generar_pdf_estudio
 from core.auth import verificar_pin
 import pytz
 
-# Configuración de página
 st.set_page_config(page_title="El Profe Saber", page_icon="🎓")
 
 # --- ESTADO DE SESIÓN ---
@@ -25,8 +24,7 @@ if "chat_id_actual" not in st.session_state: st.session_state.chat_id_actual = N
 if "mensajes_actuales" not in st.session_state: st.session_state.mensajes_actuales = []
 if "materia_anterior" not in st.session_state: st.session_state.materia_anterior = None
 if "materia_activa" not in st.session_state: st.session_state.materia_activa = "Matemáticas"
-if "creditos_anteriores" not in st.session_state: st.session_state.creditos_anteriores = 0
-if "recarga_notificada" not in st.session_state: st.session_state.recarga_notificada = False
+if "estudiante" not in st.session_state: st.session_state.estudiante = None
 
 if not st.session_state.autenticado:
     st.title("🎓 El Profe Saber")
@@ -42,7 +40,6 @@ if not st.session_state.autenticado:
         if st.form_submit_button("Entrar a estudiar", use_container_width=True):
             user = obtener_datos_usuario(email_input)
 
-            # Verificar bloqueo
             if user:
                 bloqueado_hasta = user.get('bloqueado_hasta')
                 if bloqueado_hasta:
@@ -56,9 +53,7 @@ if not st.session_state.autenticado:
                         resetear_intentos(email_input)
                         user = obtener_datos_usuario(email_input)
 
-            # Verificar PIN
             if user and verificar_pin(pin_input, user['pin']):
-                # Verificar estado de la cuenta
                 estado = user.get('estado')
                 
                 if estado == 'pendiente':
@@ -78,6 +73,8 @@ if not st.session_state.autenticado:
                     resetear_intentos(email_input)
                     st.session_state.user = user
                     st.session_state.autenticado = True
+                    estudiante = obtener_estudiante(user['id'])
+                    st.session_state.estudiante = estudiante
                     st.rerun()
                 else:
                     st.error("Estado de cuenta desconocido. Contacta al administrador.")
@@ -93,35 +90,21 @@ if not st.session_state.autenticado:
                     st.error("PIN o correo incorrectos.")
 
 else:
-    # Recargar datos del usuario para energía en tiempo real
     user = obtener_datos_usuario(st.session_state.user['email'])
-    nombre = user['email'].split('@')[0].capitalize()
-    
-    # Detectar si hubo recarga diaria
-    creditos_actuales = user.get('creditos_totales', 0)
-    if st.session_state.creditos_anteriores > 0 and creditos_actuales > st.session_state.creditos_anteriores:
-        if not st.session_state.recarga_notificada:
-            diferencia = creditos_actuales - st.session_state.creditos_anteriores
-            st.success(f"🎉 ¡Recarga diaria! +{diferencia}⚡ créditos agregados. Total: {creditos_actuales}⚡")
-            st.session_state.recarga_notificada = True
-    
-    # Actualizar créditos anteriores
-    if creditos_actuales != st.session_state.creditos_anteriores:
-        st.session_state.creditos_anteriores = creditos_actuales
-    
+    estudiante = st.session_state.estudiante
+    nombre_estudiante = estudiante['nombre'] if estudiante else user['email'].split('@')[0].capitalize()
+
     # --- SIDEBAR ---
     with st.sidebar:
-        st.header(f"¡Ey, {nombre}! 👋")
+        st.header(f"¡Ey, {nombre_estudiante}! 👋")
         
-        # Visualización de Energía
         creditos = user.get('creditos_totales', 0)
-        color_bat = "green" if creditos > 50 else "orange" if creditos > 15 else "red"
+        fecha_venc = user.get('fecha_vencimiento', '')
+        color_bat = "green" if creditos > 500 else "orange" if creditos > 100 else "red"
         st.markdown(f"### 🔋 Energía: :{color_bat}[{creditos} ⚡]")
         
-        # Info del plan
-        plan = user.get('plan', 'básico').capitalize()
-        creditos_diarios = 50 if user.get('plan') == 'basico' else 150
-        st.caption(f"📦 Plan {plan} - Recarga diaria: {creditos_diarios}⚡")
+        plan = user.get('plan', 'basico').capitalize()
+        st.caption(f"📦 Plan {plan} | Vence: {fecha_venc}")
         
         if st.button("➕ Nueva Conversación", use_container_width=True):
             st.session_state.chat_id_actual = None
@@ -151,9 +134,9 @@ else:
                     pdf_bytes = generar_pdf_estudio(st.session_state.mensajes_actuales, m_pdf)
                 
                 if pdf_bytes is None:
-                    st.error("❌ No se pudo generar el PDF. Revisa los logs del servidor.")
+                    st.error("❌ No se pudo generar el PDF.")
                 elif not isinstance(pdf_bytes, (bytes, bytearray)):
-                    st.error(f"❌ Error: formato de PDF inválido. Tipo: {type(pdf_bytes)}")
+                    st.error(f"❌ Error: formato de PDF inválido.")
                 else:
                     st.download_button(
                         label="📄 Descargar Resumen PDF",
@@ -162,16 +145,12 @@ else:
                         mime="application/pdf",
                         use_container_width=True
                     )
-                    st.success(f"✅ PDF listo ({len(pdf_bytes)} bytes)")
             except Exception as e:
                 st.error(f"❌ Error al generar PDF: {str(e)}")
-                import traceback
-                with st.expander("📋 Detalles del error"):
-                    st.code(traceback.format_exc())
 
         st.divider()
         
-        # --- HISTORIAL DE CONVERSACIONES ---
+        # --- HISTORIAL ---
         st.subheader("📚 Historial")
         try:
             chats_response = listar_chats_usuario(st.session_state.user['email'])
@@ -207,7 +186,6 @@ else:
             index=materia_index
         )
         
-        # Detectar cambio de materia y limpiar conversación
         if materia_seleccionada != st.session_state.materia_anterior:
             st.session_state.materia_activa = materia_seleccionada
             st.session_state.materia_anterior = materia_seleccionada
@@ -220,7 +198,6 @@ else:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # --- ENTRADA DE DUDAS ---
     st.divider()
     foto = st.file_uploader("📸 Añadir imagen (opcional)", type=['jpg', 'jpeg', 'png'])
     pregunta_input = st.chat_input("Escribe tu duda...")
@@ -252,12 +229,18 @@ else:
                     st.session_state.mensajes_actuales.append({"role": "assistant", "content": respuesta})
                     
                     titulo = generar_titulo_chat(pregunta_input) if not st.session_state.chat_id_actual else "Actualizando..."
-                    res_db = guardar_o_actualizar_chat(st.session_state.chat_id_actual, user['email'], titulo, st.session_state.materia_activa, st.session_state.mensajes_actuales)
-                    
+                    res_db = guardar_o_actualizar_chat(
+                        st.session_state.chat_id_actual, 
+                        user['email'], 
+                        titulo, 
+                        st.session_state.materia_activa, 
+                        st.session_state.mensajes_actuales,
+                        estudiante_id=st.session_state.estudiante['id'] if st.session_state.estudiante else None
+                            )
                     if not st.session_state.chat_id_actual:
                         st.session_state.chat_id_actual = res_db.data[0]['id']
                     
                     descontar_energia(user['email'], total_a_pagar)
                     st.rerun()
         else:
-            st.error(f"Necesitas {total_a_pagar}⚡ de energía. ¡Recarga para seguir!")
+            st.error(f"Sin energía suficiente. Necesitas {total_a_pagar}⚡ | Tienes {creditos}⚡")

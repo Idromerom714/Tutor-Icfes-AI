@@ -64,13 +64,15 @@ def descontar_energia(email, cantidad=1):
         {"user_email": email, "cantidad": cantidad}
     ).execute()
 
-def guardar_o_actualizar_chat(chat_id, email, titulo, materia, mensajes):
+def guardar_o_actualizar_chat(chat_id, email, titulo, materia, mensajes, estudiante_id=None):
     data = {
         "email_usuario": email,
         "materia": materia,
         "mensajes": mensajes,
         "actualizado_el": datetime.now(pytz.timezone('America/Bogota')).isoformat()
     }
+    if estudiante_id:
+        data["estudiante_id"] = estudiante_id
     if not chat_id:
         data["titulo"] = titulo
     
@@ -89,3 +91,15 @@ def cargar_chat_completo(chat_id):
     res = supabase_admin.table("historial_chats")\
         .select("*").eq("id", chat_id).single().execute()
     return res.data
+
+def obtener_estudiante(padre_id):
+    """Obtiene el primer estudiante asociado al padre."""
+    try:
+        res = supabase_admin.table("estudiantes")\
+            .select("*")\
+            .eq("padre_id", padre_id)\
+            .limit(1)\
+            .single().execute()
+        return res.data
+    except Exception:
+        return None
