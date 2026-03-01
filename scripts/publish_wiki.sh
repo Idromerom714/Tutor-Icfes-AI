@@ -15,18 +15,25 @@ fi
 wiki_repo="https://github.com/${owner}/${repo}.wiki.git"
 workspace_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
-if [[ ! -d "${workspace_root}/.wiki" ]]; then
-  git clone "$wiki_repo" "${workspace_root}/.wiki"
+if ! git ls-remote "$wiki_repo" >/dev/null 2>&1; then
+  echo "No se pudo acceder a: ${wiki_repo}"
+  echo "Posibles causas:"
+  echo "  1) La Wiki no está creada aún (abre la pestaña Wiki en GitHub y crea la primera página)."
+  echo "  2) Falta autenticación/permisos para el repositorio."
+  echo "  3) Owner/repo incorrectos."
+  exit 1
 fi
 
-rsync -av --delete "${workspace_root}/docs/wiki/" "${workspace_root}/.wiki/"
+tmp_dir=$(mktemp -d)
+trap 'rm -rf "$tmp_dir"' EXIT
 
-pushd "${workspace_root}/.wiki" >/dev/null
-if [[ -n $(git status --porcelain) ]]; then
-  git add .
-  git commit -m "Sync wiki from docs/wiki"
-  git push
+git clone "$wiki_repo" "$tmp_dir/wiki"
+rsync -av --delete --exclude='.git' "${workspace_root}/docs/wiki/" "$tmp_dir/wiki/"
+
+if [[ -n $(git -C "$tmp_dir/wiki" status --porcelain) ]]; then
+  git -C "$tmp_dir/wiki" add .
+  git -C "$tmp_dir/wiki" commit -m "Sync wiki from docs/wiki"
+  git -C "$tmp_dir/wiki" push
 else
   echo "No changes to publish."
 fi
-popd >/dev/null

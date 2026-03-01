@@ -1,43 +1,62 @@
 # Arquitectura y flujo
 
 ## Diagrama (Mermaid)
+
 ```mermaid
 flowchart TD
-	A[Streamlit UI] --> B[Validacion de creditos]
-	B --> C[Embedding OpenAI]
-	C --> D[Pinecone query por namespace]
-	D --> E[Contexto relevante]
-	E --> F[Prompt + pregunta]
-	F --> G[OpenRouter Chat]
-	G --> H[Respuesta al estudiante]
-	H --> I[Actualizar creditos en Supabase]
+	A[Usuario en Streamlit] --> B[Autenticación email + PIN]
+	B --> C[Selección estudiante y materia]
+	C --> D[Generación de embedding OpenAI]
+	D --> E[Consulta Pinecone por namespace]
+	E --> F[Construcción de prompt socrático]
+	F --> G[Selección de modelo en ai_engine]
+	G --> H[OpenRouter: Grok / DeepSeek / Gemini]
+	H --> I[Respuesta al estudiante]
+	I --> J[Guardar chat en Supabase]
+	J --> K[Descuento de créditos vía RPC]
+	I --> L[Exportación opcional a PDF]
 ```
 
-## Diagrama de alto nivel (texto)
-1. Streamlit recibe la pregunta y la materia.
-2. Se genera embedding con OpenAI.
-3. Se consulta Pinecone con `namespace` por materia.
-4. Se arma el prompt con contexto + pregunta.
-5. OpenRouter responde con el modelo configurado.
-6. Se guarda historial y se descuentan creditos.
+## Flujo de alto nivel
 
-## Componentes
-- UI: [app.py](../../app.py)
-- IA: [core/ai_engine.py](../../core/ai_engine.py)
-- RAG: [core/rag_search.py](../../core/rag_search.py)
-- DB: [core/database.py](../../core/database.py)
+1. La UI en Streamlit recibe pregunta, materia e imagen opcional.
+2. `core/rag_search.py` crea embedding con OpenAI y consulta Pinecone por materia.
+3. `core/ai_engine.py` construye prompt con contexto y define el modelo ideal.
+4. OpenRouter devuelve la respuesta con enfoque socrático.
+5. `core/database.py` persiste el historial y descuenta créditos.
+6. `core/pdf_generator.py` permite exportar la conversación.
 
-## Datos y estados
-- `st.session_state.autenticado`: estado de login.
-- `st.session_state.user`: perfil del estudiante.
-- `st.session_state.messages`: historial de chat.
+## Componentes principales
 
-## Materias y namespaces
-Las materias se convierten a minusculas y se usan como `namespace`:
-- matematicas
-- lectura critica
-- sociales
-- ciencias naturales
-- ingles
+- UI: [app.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/app.py)
+- Registro: [pages/registro.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/pages/registro.py)
+- IA: [core/ai_engine.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/core/ai_engine.py)
+- RAG: [core/rag_search.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/core/rag_search.py)
+- DB: [core/database.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/core/database.py)
+- Auth: [core/auth.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/core/auth.py)
+- PDF: [core/pdf_generator.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/core/pdf_generator.py)
 
-Asegura consistencia al cargar documentos en Pinecone.
+## Estado de sesión relevante
+
+- `st.session_state.autenticado`: login válido.
+- `st.session_state.email_padre`: cuenta activa del tutor.
+- `st.session_state.estudiante_actual`: estudiante seleccionado.
+- `st.session_state.messages`: mensajes del chat activo.
+
+## Materias y namespaces de Pinecone
+
+Las materias deben mapearse de forma consistente a namespaces:
+
+- `matematicas`
+- `fisica`
+- `sociales`
+- `lectura_critica`
+- `ingles`
+
+Mantener esta convención en ingesta (`upload_pdfs.py`) y en consulta evita pérdida de contexto en RAG.
+
+## Decisiones técnicas clave
+
+- Cliente dual de Supabase: clave pública para flujo normal y `SUPABASE_SERVICE_KEY` para operaciones administrativas.
+- Selección dinámica de modelo por tipo de consulta/materia.
+- Persistencia de historial como JSON para reconstrucción de sesión.
