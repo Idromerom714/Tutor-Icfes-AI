@@ -13,12 +13,13 @@ def mock_streamlit_and_supabase(monkeypatch):
     import supabase
 
     dummy_secrets = {
-        "SUPABASE_URL": "http://localhost",
-        "SUPABASE_KEY": "test",
-        "OPENROUTER_API_KEY": "test",
-        "PINECONE_API_KEY": "test",
-        "PINECONE_INDEX_NAME": "test-index",
-        "OPENAI_API_KEY": "test",
+        "SUPABASE_URL": "http://localhost:54321",
+        "SUPABASE_KEY": "test-anon-key",
+        "SUPABASE_SERVICE_KEY": "test-service-key",
+        "OPENROUTER_API_KEY": "test-openrouter-key",
+        "PINECONE_API_KEY": "test-pinecone-key",
+        "PINECONE_INDEX_NAME": "icfes-index",
+        "OPENAI_API_KEY": "test-openai-key",
     }
 
     monkeypatch.setattr(st, "secrets", dummy_secrets, raising=False)

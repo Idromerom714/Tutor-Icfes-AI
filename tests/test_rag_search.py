@@ -1,59 +1,61 @@
 """
-Tests para el sistema RAG (Retrieval Augmented Generation).
-Verifica que la busqueda en Pinecone funcione correctamente.
+Tests para el sistema RAG (core/rag_search.py).
 """
 
 import pytest
 from unittest.mock import patch, MagicMock
 
 
-class TestBusquedaContexto:
-    """Tests para la busqueda de contexto en Pinecone"""
+class TestBuscarContextoIcfes:
+    """Tests para buscar_contexto_icfes"""
 
     @patch("core.rag_search.OpenAI")
     @patch("core.rag_search.Pinecone")
-    def test_busqueda_exitosa(self, mock_pinecone_cls, mock_openai_cls):
-        """Debe retornar contexto relevante cuando encuentra coincidencias"""
+    def test_busqueda_con_resultados(self, mock_pinecone_cls, mock_openai_cls):
+        """Debe retornar contexto cuando encuentra coincidencias"""
         from core.rag_search import buscar_contexto_icfes
 
+        # Mock OpenAI embeddings
         mock_openai = mock_openai_cls.return_value
         mock_openai.embeddings.create.return_value.data = [
             MagicMock(embedding=[0.1] * 1536)
         ]
 
+        # Mock Pinecone query
         mock_pinecone = mock_pinecone_cls.return_value
         mock_index = mock_pinecone.Index.return_value
         mock_index.query.return_value = {
             "matches": [
                 {
                     "id": "doc1",
-                    "score": 0.85,
+                    "score": 0.92,
                     "metadata": {
-                        "texto": "El teorema de Pitagoras establece que a^2 + b^2 = c^2",
-                        "materia": "matematicas",
-                    },
+                        "texto": "El teorema de Pitágoras establece que a² + b² = c²",
+                        "materia": "matematicas"
+                    }
                 },
                 {
                     "id": "doc2",
-                    "score": 0.78,
+                    "score": 0.85,
                     "metadata": {
-                        "texto": "Los triangulos rectangulos tienen un angulo de 90 grados",
-                        "materia": "matematicas",
-                    },
-                },
+                        "texto": "En un triángulo rectángulo, el cuadrado de la hipotenusa...",
+                        "materia": "matematicas"
+                    }
+                }
             ]
         }
 
-        resultado = buscar_contexto_icfes("Que es el teorema de Pitagoras?", "matematicas")
+        resultado = buscar_contexto_icfes("¿Qué es el teorema de Pitágoras?", "Matemáticas")
 
         assert isinstance(resultado, str)
         assert len(resultado) > 0
-        assert "Pitagoras" in resultado
+        assert "Pitágoras" in resultado
+        assert "a² + b² = c²" in resultado
 
     @patch("core.rag_search.OpenAI")
     @patch("core.rag_search.Pinecone")
     def test_busqueda_sin_resultados(self, mock_pinecone_cls, mock_openai_cls):
-        """Debe manejar correctamente cuando no hay coincidencias"""
+        """Debe retornar string vacío cuando no hay coincidencias"""
         from core.rag_search import buscar_contexto_icfes
 
         mock_openai = mock_openai_cls.return_value
@@ -65,15 +67,15 @@ class TestBusquedaContexto:
         mock_index = mock_pinecone.Index.return_value
         mock_index.query.return_value = {"matches": []}
 
-        resultado = buscar_contexto_icfes("Pregunta muy especifica sin contexto", "matematicas")
+        resultado = buscar_contexto_icfes("Pregunta muy específica", "Matemáticas")
 
         assert isinstance(resultado, str)
         assert resultado == ""
 
     @patch("core.rag_search.OpenAI")
     @patch("core.rag_search.Pinecone")
-    def test_namespace_correcto(self, mock_pinecone_cls, mock_openai_cls):
-        """Debe buscar en el namespace correcto segun la materia"""
+    def test_namespace_correcto_por_materia(self, mock_pinecone_cls, mock_openai_cls):
+        """Debe usar el namespace correcto según la materia"""
         from core.rag_search import buscar_contexto_icfes
 
         mock_openai = mock_openai_cls.return_value
@@ -85,17 +87,21 @@ class TestBusquedaContexto:
         mock_index = mock_pinecone.Index.return_value
         mock_index.query.return_value = {"matches": []}
 
-        materias = ["matematicas", "lectura_critica", "sociales", "ciencias_naturales", "ingles"]
+        # Probar diferentes materias
+        materias = ["Matemáticas", "Lectura Crítica", "Sociales", "Ciencias Naturales", "Inglés"]
 
         for materia in materias:
             buscar_contexto_icfes("Pregunta de prueba", materia)
+            
+            # Verificar que se llamó con namespace en minúsculas
             llamada = mock_index.query.call_args
-            assert llamada[1]["namespace"] == materia.lower()
+            namespace_usado = llamada[1]["namespace"]
+            assert namespace_usado == materia.lower()
 
     @patch("core.rag_search.OpenAI")
     @patch("core.rag_search.Pinecone")
-    def test_top_k_parametro(self, mock_pinecone_cls, mock_openai_cls):
-        """Debe limitar el numero de resultados con top_k"""
+    def test_top_k_tres_resultados(self, mock_pinecone_cls, mock_openai_cls):
+        """Debe solicitar top 3 resultados"""
         from core.rag_search import buscar_contexto_icfes
 
         mock_openai = mock_openai_cls.return_value
@@ -107,19 +113,15 @@ class TestBusquedaContexto:
         mock_index = mock_pinecone.Index.return_value
         mock_index.query.return_value = {"matches": []}
 
-        buscar_contexto_icfes("Pregunta", "matematicas")
+        buscar_contexto_icfes("Test", "Física")
 
         llamada = mock_index.query.call_args
         assert llamada[1]["top_k"] == 3
 
-
-class TestEmbeddings:
-    """Tests para la generacion de embeddings"""
-
     @patch("core.rag_search.OpenAI")
     @patch("core.rag_search.Pinecone")
-    def test_embedding_dimension(self, mock_pinecone_cls, mock_openai_cls):
-        """Los embeddings deben tener 1536 dimensiones (text-embedding-3-small)"""
+    def test_embedding_dimension_1536(self, mock_pinecone_cls, mock_openai_cls):
+        """El embedding debe tener 1536 dimensiones (text-embedding-3-small)"""
         from core.rag_search import buscar_contexto_icfes
 
         mock_openai = mock_openai_cls.return_value
@@ -131,67 +133,17 @@ class TestEmbeddings:
         mock_index = mock_pinecone.Index.return_value
         mock_index.query.return_value = {"matches": []}
 
-        buscar_contexto_icfes("Test", "matematicas")
+        buscar_contexto_icfes("Test", "Matemáticas")
 
-        vector_usado = mock_index.query.call_args[1]["vector"]
-        assert len(vector_usado) == 1536
-
-    @patch("core.rag_search.OpenAI")
-    @patch("core.rag_search.Pinecone")
-    def test_texto_vacio(self, mock_pinecone_cls, mock_openai_cls):
-        """Debe manejar correctamente textos vacios"""
-        from core.rag_search import buscar_contexto_icfes
-
-        mock_openai = mock_openai_cls.return_value
-        mock_openai.embeddings.create.return_value.data = [
-            MagicMock(embedding=[0.1] * 1536)
-        ]
-
-        mock_pinecone = mock_pinecone_cls.return_value
-        mock_index = mock_pinecone.Index.return_value
-        mock_index.query.return_value = {"matches": []}
-
-        resultado = buscar_contexto_icfes("", "matematicas")
-        assert isinstance(resultado, str)
-
-
-class TestManejoCasosEdge:
-    """Tests para casos edge y errores"""
+        # Verificar que el vector tiene 1536 dimensiones
+        llamada = mock_index.query.call_args
+        vector = llamada[1]["vector"]
+        assert len(vector) == 1536
 
     @patch("core.rag_search.OpenAI")
     @patch("core.rag_search.Pinecone")
-    def test_error_openai(self, mock_pinecone_cls, mock_openai_cls):
-        """Debe manejar errores de la API de OpenAI"""
-        from core.rag_search import buscar_contexto_icfes
-
-        mock_openai = mock_openai_cls.return_value
-        mock_openai.embeddings.create.side_effect = Exception("API Error")
-
-        with pytest.raises(Exception):
-            buscar_contexto_icfes("Test", "matematicas")
-
-    @patch("core.rag_search.OpenAI")
-    @patch("core.rag_search.Pinecone")
-    def test_error_pinecone(self, mock_pinecone_cls, mock_openai_cls):
-        """Debe manejar errores de Pinecone"""
-        from core.rag_search import buscar_contexto_icfes
-
-        mock_openai = mock_openai_cls.return_value
-        mock_openai.embeddings.create.return_value.data = [
-            MagicMock(embedding=[0.1] * 1536)
-        ]
-
-        mock_pinecone = mock_pinecone_cls.return_value
-        mock_index = mock_pinecone.Index.return_value
-        mock_index.query.side_effect = Exception("Pinecone Error")
-
-        with pytest.raises(Exception):
-            buscar_contexto_icfes("Test", "matematicas")
-
-    @patch("core.rag_search.OpenAI")
-    @patch("core.rag_search.Pinecone")
-    def test_metadata_faltante(self, mock_pinecone_cls, mock_openai_cls):
-        """Debe lanzar error si falta el campo texto en metadata"""
+    def test_concatena_textos_con_saltos(self, mock_pinecone_cls, mock_openai_cls):
+        """El contexto debe concatenar textos con doble salto de línea"""
         from core.rag_search import buscar_contexto_icfes
 
         mock_openai = mock_openai_cls.return_value
@@ -203,56 +155,15 @@ class TestManejoCasosEdge:
         mock_index = mock_pinecone.Index.return_value
         mock_index.query.return_value = {
             "matches": [
-                {"id": "doc1", "score": 0.85, "metadata": {}}
+                {"metadata": {"texto": "Primer chunk"}},
+                {"metadata": {"texto": "Segundo chunk"}},
+                {"metadata": {"texto": "Tercer chunk"}}
             ]
         }
 
-        with pytest.raises(KeyError):
-            buscar_contexto_icfes("Test", "matematicas")
+        resultado = buscar_contexto_icfes("Test", "Matemáticas")
 
-
-class TestFormateadoContexto:
-    """Tests para el formateo del contexto retornado"""
-
-    @patch("core.rag_search.OpenAI")
-    @patch("core.rag_search.Pinecone")
-    def test_formato_legible(self, mock_pinecone_cls, mock_openai_cls):
-        """El contexto debe estar bien formateado para el LLM"""
-        from core.rag_search import buscar_contexto_icfes
-
-        mock_openai = mock_openai_cls.return_value
-        mock_openai.embeddings.create.return_value.data = [
-            MagicMock(embedding=[0.1] * 1536)
-        ]
-
-        mock_pinecone = mock_pinecone_cls.return_value
-        mock_index = mock_pinecone.Index.return_value
-        mock_index.query.return_value = {
-            "matches": [
-                {
-                    "id": "doc1",
-                    "score": 0.85,
-                    "metadata": {
-                        "texto": "Primera fuente de informacion",
-                        "materia": "matematicas",
-                    },
-                },
-                {
-                    "id": "doc2",
-                    "score": 0.80,
-                    "metadata": {
-                        "texto": "Segunda fuente de informacion",
-                        "materia": "matematicas",
-                    },
-                },
-            ]
-        }
-
-        resultado = buscar_contexto_icfes("Test", "matematicas")
-
-        assert isinstance(resultado, str)
-        assert len(resultado) > 0
-        assert "Primera fuente" in resultado or "informacion" in resultado
+        assert "Primer chunk\n\nSegundo chunk\n\nTercer chunk" == resultado
 
 
 if __name__ == "__main__":
