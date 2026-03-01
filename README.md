@@ -22,15 +22,29 @@ El sistema combina tecnologías de vanguardia en inteligencia artificial:
 - **Padres y tutores**: Plataforma para gestionar el aprendizaje de múltiples estudiantes
 - **Instituciones educativas**: Sistema escalable con control de créditos y monitoreo de uso
 
+## ⚡ Inicio rápido para estudiantes
+
+Guía express para empezar a estudiar en menos de 2 minutos:
+
+1. **Inicia sesión** con correo y PIN.
+2. **Selecciona tu perfil de estudiante** y la **materia** a trabajar.
+3. **Escribe tu pregunta** (si quieres, adjunta una imagen del ejercicio).
+4. **Sigue las pistas del tutor** hasta resolver el problema paso a paso.
+5. **Guarda tu progreso**: revisa historial o exporta el chat a PDF.
+
+**Tip**: Para mejores resultados, incluye tema + grado + qué parte no entiendes.
+
 ## 📑 Tabla de Contenidos
 
 - [Descripción General](#-descripción-general)
+- [Inicio rápido para estudiantes](#-inicio-rápido-para-estudiantes)
 - [Características Principales](#-características-principales)
 - [Arquitectura del Sistema](#-arquitectura-del-sistema)
 - [Stack Tecnológico](#-stack-tecnológico)
 - [Configuración e Instalación](#-configuración-e-instalación)
 - [Estructura de Datos](#-estructura-de-datos)
 - [Uso y Ejecución](#-uso-y-ejecución)
+- [Manual de Usuario](#-manual-de-usuario)
 - [Scripts Disponibles](#-scripts-disponibles)
 - [Pruebas](#-pruebas)
 - [Despliegue](#-despliegue)
@@ -450,12 +464,6 @@ streamlit run app.py
 
 Esto iniciará la aplicación en `http://localhost:8501`.
 
-### Desarrollo local
-
-```bash
-streamlit run app.py
-```
-
 ### Producción (con configuraciones adicionales)
 
 ```bash
@@ -463,6 +471,98 @@ streamlit run app.py --server.enableCORS false --server.enableXsrfProtection fal
 ```
 
 > **Nota**: Las flags de CORS y XSRF se usan típicamente en entornos controlados. Para producción pública, evaluar implicaciones de seguridad.
+
+---
+
+## 📘 Manual de Usuario
+
+Esta guía está pensada para padres/tutores y estudiantes que usarán la aplicación en el día a día.
+
+### 1) Ingreso a la plataforma
+
+1. Abre la aplicación en tu navegador (por ejemplo, `http://localhost:8501` en entorno local).
+2. Ingresa con tu **correo** y **PIN**.
+3. Si es tu primera vez, crea la cuenta desde la página de registro.
+
+### 2) Registro inicial (primera vez)
+
+1. Ve a la sección de registro.
+2. Completa los datos del padre/tutor.
+3. Registra al estudiante (nombre y grado).
+4. Acepta la política de datos/consentimiento.
+5. Guarda el formulario y vuelve al login.
+
+### 3) Selección de estudiante y materia
+
+1. Inicia sesión.
+2. Selecciona el estudiante asociado a la cuenta.
+3. Elige la materia (Matemáticas, Física, Sociales, Lectura Crítica o Inglés).
+4. Verifica que tengas créditos disponibles.
+
+### 4) Cómo usar el chat de estudio
+
+1. Escribe una pregunta clara sobre el tema que estás estudiando.
+2. Envía la consulta y espera la respuesta guiada del tutor.
+3. Continúa la conversación para profundizar; el sistema conserva el contexto del chat actual.
+
+**Buenas prácticas para mejores respuestas:**
+- Incluye contexto: tema, grado y tipo de ejercicio.
+- Haz una pregunta por paso cuando el problema sea complejo.
+- Pide pistas o explicación gradual si no entiendes un punto.
+
+### 5) Uso de imágenes (cuando aplique)
+
+1. Adjunta una foto del ejercicio o gráfica.
+2. Verifica que la imagen sea legible (buena luz y enfoque).
+3. Acompaña la imagen con una pregunta concreta.
+
+**Recomendaciones:**
+- Evita fotos cortadas o borrosas.
+- Si hay texto pequeño, toma la foto más cerca.
+- Si el resultado no es el esperado, vuelve a subir una imagen más nítida.
+
+### 6) Créditos y consumo
+
+- Cada interacción consume créditos según la complejidad.
+- Las consultas con imagen tienen costo adicional.
+- Cuando el saldo es bajo, revisa tu plan o realiza recarga según la configuración del sistema.
+
+### 7) Historial de conversaciones
+
+1. Abre la sección de historial.
+2. Selecciona un chat anterior por título/materia.
+3. Revisa los mensajes y retoma el estudio desde ese punto.
+
+### 8) Exportar conversaciones a PDF
+
+1. Abre el chat que deseas guardar.
+2. Usa la opción **Exportar PDF**.
+3. Descarga el archivo y compártelo o archívalo para repaso.
+
+### 9) Solución de problemas comunes
+
+**No puedo iniciar sesión**
+- Verifica correo y PIN.
+- Si superaste intentos fallidos, espera desbloqueo o contacta al administrador.
+
+**No aparecen respuestas del tutor**
+- Revisa tu conexión a internet.
+- Intenta reformular la pregunta con más contexto.
+
+**La imagen no se procesa bien**
+- Sube una imagen más clara y centrada.
+- Reduce ruido visual en la foto (fondo limpio).
+
+**No puedo exportar PDF**
+- Intenta nuevamente desde el mismo chat.
+- Verifica que el chat tenga mensajes suficientes para exportar.
+
+### 10) Recomendaciones de uso pedagógico
+
+- Realiza sesiones cortas y frecuentes (20–40 minutos).
+- Pide explicaciones con ejemplos cercanos a tu nivel.
+- Cierra cada sesión con un resumen de lo aprendido.
+- Revisa el historial antes de iniciar una nueva consulta del mismo tema.
 
 ---
 
