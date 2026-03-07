@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.x-FF4B4B.svg)](https://streamlit.io/)
-[![Tests](https://img.shields.io/badge/tests-57%20passed-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-77%20passed-success.svg)](tests/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ## 🎯 Descripción General
@@ -27,10 +27,11 @@ El sistema combina tecnologías de vanguardia en inteligencia artificial:
 Guía express para empezar a estudiar en menos de 2 minutos:
 
 1. **Inicia sesión** con correo y PIN.
-2. **Selecciona tu perfil de estudiante** y la **materia** a trabajar.
-3. **Escribe tu pregunta** (si quieres, adjunta una imagen del ejercicio).
-4. **Sigue las pistas del tutor** hasta resolver el problema paso a paso.
-5. **Guarda tu progreso**: revisa historial o exporta el chat a PDF.
+2. **Completa el diagnóstico inicial/semanal** (10 preguntas tipo ICFES).
+3. **Revisa tu materia prioritaria** y el **plan semanal sugerido**.
+4. **Escribe tu pregunta** (si quieres, adjunta una imagen del ejercicio).
+5. **Sigue las pistas del tutor** hasta resolver el problema paso a paso.
+6. **Guarda tu progreso**: revisa historial, tendencia semanal o exporta el chat a PDF.
 
 **Tip**: Para mejores resultados, incluye tema + grado + qué parte no entiendes.
 
@@ -63,6 +64,14 @@ Guía express para empezar a estudiar en menos de 2 minutos:
   - Lectura Crítica (análisis textual y argumentación)
   - Inglés (comprensión lectora y uso del idioma)
 - **📸 Análisis de imágenes**: Sube fotos de ejercicios, gráficas o problemas; el sistema las interpreta automáticamente
+- **🧭 Diagnóstico adaptativo**: Test tipo ICFES (10-15 preguntas, actualmente 10) para detectar fortalezas y brechas
+- **🧱 Banco escalable por competencia**: 100 variantes por competencia con diversidad semántica
+- **📅 Seguimiento semanal**: El diagnóstico se reactiva cada 7 días para medir progreso real
+- **🎯 Materia prioritaria automática**: El sistema enfoca primero la materia con menor rendimiento
+- **🎚️ Dificultad calibrada**: Recomendación por materia (básico/intermedio/avanzado) y adaptación del tutor por nivel
+- **💬 Preguntas recomendadas**: Sugerencias personalizadas según competencias por reforzar
+- **🗓️ Plan semanal**: Ruta de práctica por día basada en resultados del diagnóstico
+- **📈 Tendencia de progreso**: Visualización de las últimas semanas con evolución de puntaje
 - **💬 Memoria contextual**: El tutor recuerda la conversación completa dentro de cada sesión
 - **📄 Exportación PDF**: Descarga resúmenes limpios de estudio con todo el historial de la conversación
 - **🔄 Historial persistente**: Acceso a todas las conversaciones anteriores organizadas por materia
@@ -82,6 +91,7 @@ Guía express para empezar a estudiar en menos de 2 minutos:
   - **Gemini** (google/gemini-2.0-flash-001): Para análisis de imágenes con capacidad visual
 - **📖 RAG especializado**: Cada materia tiene su propio namespace en Pinecone con documentos oficiales del ICFES
 - **🎯 Embeddings semánticos**: OpenAI text-embedding-3-small (1536 dimensiones) para búsqueda contextual precisa
+- **🧩 Personalización pedagógica global**: El resultado diagnóstico se inyecta en el prompt del tutor para priorizar competencias débiles
 
 ## 🏗️ Arquitectura del Sistema
 
@@ -168,6 +178,7 @@ Tutor-Icfes-AI sigue una arquitectura de **tres capas** con desacoplamiento entr
 | **Base de datos** | `core/database.py` | CRUD de usuarios, chats, estudiantes, créditos | Supabase (cliente dual: normal + admin) |
 | **RAG** | `core/rag_search.py` | Generación de embeddings y búsqueda vectorial | OpenAI, Pinecone |
 | **Motor IA** | `core/ai_engine.py` | Selección de modelo LLM y construcción de prompts | OpenRouter, historial de conversación |
+| **Diagnóstico** | `core/diagnostic.py` | Banco de preguntas, evaluación, plan semanal y seguimiento | Lógica Python, sesión Streamlit |
 | **Exportación PDF** | `core/pdf_generator.py` | Conversión de chats a documentos PDF | FPDF2, limpieza de markdown/LaTeX |
 
 ### Decisiones de arquitectura clave
@@ -357,7 +368,7 @@ Debería abrir un navegador en `http://localhost:8501` con la interfaz de login.
 
 ### Modelo de base de datos en Supabase
 
-El sistema utiliza un modelo relacional con 4 tablas principales:
+El sistema utiliza un modelo relacional con 5 tablas principales:
 
 #### Tabla: `padres`
 
@@ -413,6 +424,19 @@ Registro de aceptación de políticas de privacidad (GDPR).
 | `acepto_politica` | BOOLEAN | Aceptación explícita |
 | `version_politica` | TEXT | Versión de la política aceptada (ej: `v1.0`) |
 | `fecha_aceptacion` | TIMESTAMP | Momento de la aceptación |
+
+#### Tabla: `diagnosticos_estudiante`
+
+Resultados del diagnóstico inicial/semanal por estudiante.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id` | UUID | Identificador único |
+| `estudiante_id` | UUID | FK a `estudiantes.id` |
+| `email_padre` | TEXT | Email del padre/tutor |
+| `resultado` | JSONB | Resultado completo del diagnóstico (por materia, temas a reforzar, recomendaciones) |
+| `puntaje` | NUMERIC(5,2) | Puntaje global en porcentaje |
+| `creado_el` | TIMESTAMPTZ | Fecha/hora del diagnóstico |
 
 ### Funciones RPC requeridas
 
@@ -499,7 +523,14 @@ Esta guía está pensada para padres/tutores y estudiantes que usarán la aplica
 3. Elige la materia (Matemáticas, Física, Sociales, Lectura Crítica o Inglés).
 4. Verifica que tengas créditos disponibles.
 
-### 4) Cómo usar el chat de estudio
+### 4) Diagnóstico inicial y semanal
+
+1. Al primer ingreso, completa el diagnóstico para crear tu perfil de aprendizaje.
+2. Cada 7 días, el sistema solicitará un nuevo diagnóstico para seguimiento.
+3. Revisa la variación de puntaje frente a la semana anterior.
+4. Usa el plan semanal sugerido y la materia prioritaria para enfocar tu estudio.
+
+### 5) Cómo usar el chat de estudio
 
 1. Escribe una pregunta clara sobre el tema que estás estudiando.
 2. Envía la consulta y espera la respuesta guiada del tutor.
@@ -510,7 +541,7 @@ Esta guía está pensada para padres/tutores y estudiantes que usarán la aplica
 - Haz una pregunta por paso cuando el problema sea complejo.
 - Pide pistas o explicación gradual si no entiendes un punto.
 
-### 5) Uso de imágenes (cuando aplique)
+### 6) Uso de imágenes (cuando aplique)
 
 1. Adjunta una foto del ejercicio o gráfica.
 2. Verifica que la imagen sea legible (buena luz y enfoque).
@@ -521,25 +552,25 @@ Esta guía está pensada para padres/tutores y estudiantes que usarán la aplica
 - Si hay texto pequeño, toma la foto más cerca.
 - Si el resultado no es el esperado, vuelve a subir una imagen más nítida.
 
-### 6) Créditos y consumo
+### 7) Créditos y consumo
 
 - Cada interacción consume créditos según la complejidad.
 - Las consultas con imagen tienen costo adicional.
 - Cuando el saldo es bajo, revisa tu plan o realiza recarga según la configuración del sistema.
 
-### 7) Historial de conversaciones
+### 8) Historial de conversaciones
 
 1. Abre la sección de historial.
 2. Selecciona un chat anterior por título/materia.
 3. Revisa los mensajes y retoma el estudio desde ese punto.
 
-### 8) Exportar conversaciones a PDF
+### 9) Exportar conversaciones a PDF
 
 1. Abre el chat que deseas guardar.
 2. Usa la opción **Exportar PDF**.
 3. Descarga el archivo y compártelo o archívalo para repaso.
 
-### 9) Solución de problemas comunes
+### 10) Solución de problemas comunes
 
 **No puedo iniciar sesión**
 - Verifica correo y PIN.
@@ -557,7 +588,7 @@ Esta guía está pensada para padres/tutores y estudiantes que usarán la aplica
 - Intenta nuevamente desde el mismo chat.
 - Verifica que el chat tenga mensajes suficientes para exportar.
 
-### 10) Recomendaciones de uso pedagógico
+### 11) Recomendaciones de uso pedagógico
 
 - Realiza sesiones cortas y frecuentes (20–40 minutos).
 - Pide explicaciones con ejemplos cercanos a tu nivel.
@@ -623,9 +654,9 @@ pytest tests/test_auth.py  # Módulo específico
 
 ### Estado actual
 
-- ✅ **57 tests** (100% de éxito)
-- 📁 **5 archivos**: `test_auth.py`, `test_database.py`, `test_rag_search.py`, `test_ai_engine.py`, `test_pdf_generator.py`
-- 📋 **Cobertura**: todos los módulos `core/` (auth, database, RAG, AI engine, PDF generator)
+- ✅ **77 tests** (100% de éxito)
+- 📁 **6 archivos**: `test_auth.py`, `test_database.py`, `test_rag_search.py`, `test_ai_engine.py`, `test_pdf_generator.py`, `test_diagnostic.py`
+- 📋 **Cobertura**: módulos `core/` incluyendo diagnóstico, personalización y seguimiento semanal
 - ⚙️ **Configuración**: `pytest.ini` + fixtures globales en `conftest.py`
 
 ### Resumen de módulos de prueba
@@ -633,9 +664,10 @@ pytest tests/test_auth.py  # Módulo específico
 | Módulo | Tests | Descripción |
 |--------|-------|-------------|
 | `test_auth.py` | 7 | Hashing y verificación de PINs con bcrypt |
-| `test_database.py` | 10 | Operaciones CRUD en Supabase (usuarios, chats, créditos) |
+| `test_database.py` | 15 | Operaciones CRUD en Supabase (usuarios, chats, créditos, diagnósticos) |
+| `test_diagnostic.py` | 12 | Evaluación diagnóstica, banco de 100 variantes, dificultad y renovación semanal |
 | `test_rag_search.py` | 6 | Generación de embeddings y búsqueda en Pinecone |
-| `test_ai_engine.py` | 15 | Selección de modelos, construcción de prompts, manejo de historial |
+| `test_ai_engine.py` | 18 | Selección de modelos, prompt socrático, historial, contexto diagnóstico y modulación por nivel |
 | `test_pdf_generator.py` | 19 | Exportación de chats a PDF, limpieza de markdown/LaTeX |
 
 ### Documentación

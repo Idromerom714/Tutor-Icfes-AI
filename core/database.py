@@ -103,3 +103,50 @@ def obtener_estudiante(padre_id):
         return res.data
     except Exception:
         return None
+
+
+def obtener_ultimo_diagnostico(estudiante_id):
+    """Obtiene el último diagnóstico de un estudiante (si existe)."""
+    try:
+        res = supabase_admin.table("diagnosticos_estudiante")\
+            .select("*")\
+            .eq("estudiante_id", estudiante_id)\
+            .order("creado_el", desc=True)\
+            .limit(1)\
+            .execute()
+        if res.data:
+            return res.data[0]
+        return None
+    except Exception:
+        # Fallback seguro mientras la tabla se despliega en producción.
+        return None
+
+
+def guardar_diagnostico_estudiante(estudiante_id, email_padre, resultado):
+    """Guarda el resultado del diagnóstico sin romper el flujo principal."""
+    data = {
+        "estudiante_id": estudiante_id,
+        "email_padre": email_padre,
+        "resultado": resultado,
+        "puntaje": resultado.get("porcentaje_total", 0),
+        "creado_el": datetime.now(pytz.timezone('America/Bogota')).isoformat(),
+    }
+
+    try:
+        return supabase_admin.table("diagnosticos_estudiante").insert(data).execute()
+    except Exception:
+        return None
+
+
+def listar_diagnosticos_estudiante(estudiante_id, limite=4):
+    """Lista diagnósticos recientes para mostrar tendencia de progreso."""
+    try:
+        res = supabase_admin.table("diagnosticos_estudiante")\
+            .select("puntaje, creado_el")\
+            .eq("estudiante_id", estudiante_id)\
+            .order("creado_el", desc=True)\
+            .limit(limite)\
+            .execute()
+        return res.data or []
+    except Exception:
+        return []

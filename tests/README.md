@@ -4,7 +4,7 @@
 
 Suite de tests completamente renovada (marzo 2026) alineada con el estado actual del código.
 
-**Resultado actual:** ✅ **57 tests passed** (64 warnings de deprecación en fpdf2, sin impacto funcional)
+**Resultado actual:** ✅ **77 tests passed** (64 warnings de deprecación en fpdf2, sin impacto funcional)
 
 ## Archivos de Test
 
@@ -13,12 +13,15 @@ Suite de tests completamente renovada (marzo 2026) alineada con el estado actual
 - Verificación de PIN contra hash
 - Manejo de caracteres especiales y case sensitivity
 
-### `test_database.py` (10 tests)
+### `test_database.py` (15 tests)
 - `obtener_datos_usuario()`: obtener padres desde Supabase
 - `descontar_energia()`: llamadas al RPC `descontar_creditos`
 - `guardar_o_actualizar_chat()`: inserción y actualización de chats
 - `registrar_intento_fallido()` y `resetear_intentos()`: control de acceso
 - `obtener_estudiante()`: relación padre-estudiante
+- `obtener_ultimo_diagnostico()`: último resultado diagnóstico por estudiante
+- `guardar_diagnostico_estudiante()`: persistencia de resultados
+- `listar_diagnosticos_estudiante()`: historial de progreso semanal (últimas mediciones)
 
 ### `test_rag_search.py` (6 tests)
 - `buscar_contexto_icfes()`: búsqueda vectorial en Pinecone
@@ -26,15 +29,28 @@ Suite de tests completamente renovada (marzo 2026) alineada con el estado actual
 - Embeddings de 1536 dimensiones (text-embedding-3-small)
 - Concatenación de resultados
 
-### `test_ai_engine.py` (15 tests)
+### `test_ai_engine.py` (18 tests)
 - Selección de modelos por materia:
   - Sociales/Lectura Crítica → Grok
   - Matemáticas sin imagen → DeepSeek
   - Matemáticas/Física con imagen → Gemini
 - Validación del prompt socrático
 - Manejo del historial de conversación
+- Inyección de contexto diagnóstico para personalización pedagógica
+- Modulación del estilo pedagógico por nivel recomendado (básico/intermedio/avanzado)
 - Manejo de errores de API
 - `generar_titulo_chat()`: generación de títulos
+
+### `test_diagnostic.py` (12 tests)
+- `obtener_preguntas_diagnostico()`: tamaño y validación de rango (10-15)
+- Banco escalado: mínimo 100 variantes por competencia
+- Verificación de diversidad semántica en variantes
+- `evaluar_diagnostico()`: puntaje global y recomendaciones
+- `obtener_materia_prioritaria()`: selección automática de materia débil
+- `generar_preguntas_recomendadas()`: prompts sugeridos por tema
+- `generar_plan_semanal()`: plan de estudio por días
+- `diagnostico_requiere_renovacion()`: reactivación semanal cada 7 días
+- Calibración de dificultad objetivo por materia
 
 ### `test_pdf_generator.py` (19 tests)
 - `generar_pdf_estudio()`: generación de PDFs
@@ -93,6 +109,8 @@ El fixture `mock_streamlit_and_supabase` se aplica automáticamente a todos los 
 - Todos los tests de database ahora usan `supabase_admin` correctamente
 - Tests de AI engine reflejan la lógica actual de selección de modelos
 - Tests de RAG validados contra la implementación real
+- Se agregó cobertura para diagnóstico inicial/semanal y seguimiento de progreso
+- Se agregó cobertura para banco expandido de 100 variantes y dificultad adaptativa
 
 ## Notas
 

@@ -200,6 +200,112 @@ class TestManejoHistorial:
         assert "Primera respuesta" in respuesta
 
 
+class TestContextoDiagnostico:
+    """Tests para personalización por diagnóstico."""
+
+    @patch("core.ai_engine.requests.post")
+    def test_inyecta_contexto_diagnostico_en_system_prompt(self, mock_post):
+        """El payload debe incluir el perfil diagnóstico en el system prompt."""
+        from core.ai_engine import llamar_profe_saber
+
+        mock_post.return_value.json.return_value = {
+            "choices": [{"message": {"content": "Respuesta personalizada"}}]
+        }
+
+        diagnostico = {
+            "porcentaje_total": 48.0,
+            "resultados_por_materia": [
+                {
+                    "materia": "Matemáticas",
+                    "aciertos": 1,
+                    "total": 3,
+                    "porcentaje": 33.3,
+                    "temas_reforzar": ["Álgebra básica"],
+                }
+            ],
+            "recomendaciones": ["Matemáticas: prioridad alta de refuerzo."],
+        }
+
+        llamar_profe_saber(
+            mensaje_usuario="No entiendo ecuaciones",
+            contexto_pdf="",
+            imagen_bytes=None,
+            materia="Matemáticas",
+            historial_mensajes=[],
+            diagnostico_resultado=diagnostico,
+        )
+
+        payload = mock_post.call_args[1]["json"]
+        system_prompt = payload["messages"][0]["content"]
+
+        assert "PERFIL" in system_prompt.upper()
+        assert "DIAGN" in system_prompt.upper()
+        assert "Álgebra básica" in system_prompt
+        assert "48.0%" in system_prompt
+
+    @patch("core.ai_engine.requests.post")
+    def test_contexto_diagnostico_vacio_aplica_fallback(self, mock_post):
+        """Si no hay diagnóstico, debe incluir fallback pedagógico."""
+        from core.ai_engine import llamar_profe_saber
+
+        mock_post.return_value.json.return_value = {
+            "choices": [{"message": {"content": "Respuesta base"}}]
+        }
+
+        llamar_profe_saber(
+            mensaje_usuario="Ayúdame con lectura",
+            contexto_pdf="",
+            imagen_bytes=None,
+            materia="Lectura Crítica",
+            historial_mensajes=[],
+            diagnostico_resultado=None,
+        )
+
+        payload = mock_post.call_args[1]["json"]
+        system_prompt = payload["messages"][0]["content"]
+
+        assert "Sin diagnóstico disponible" in system_prompt
+
+    @patch("core.ai_engine.requests.post")
+    def test_nivel_recomendado_modula_instruccion(self, mock_post):
+        """Debe incluir instrucciones pedagógicas del nivel recomendado."""
+        from core.ai_engine import llamar_profe_saber
+
+        mock_post.return_value.json.return_value = {
+            "choices": [{"message": {"content": "Respuesta adaptada"}}]
+        }
+
+        diagnostico = {
+            "porcentaje_total": 82.0,
+            "resultados_por_materia": [
+                {
+                    "materia": "Matemáticas",
+                    "aciertos": 3,
+                    "total": 3,
+                    "porcentaje": 100.0,
+                    "temas_reforzar": [],
+                }
+            ],
+            "recomendaciones": ["Matemáticas: buen punto de partida."],
+        }
+
+        llamar_profe_saber(
+            mensaje_usuario="Quiero un reto",
+            contexto_pdf="",
+            imagen_bytes=None,
+            materia="Matemáticas",
+            historial_mensajes=[],
+            diagnostico_resultado=diagnostico,
+            nivel_recomendado="avanzado",
+        )
+
+        payload = mock_post.call_args[1]["json"]
+        system_prompt = payload["messages"][0]["content"]
+
+        assert "NIVEL RECOMENDADO" in system_prompt
+        assert "AVANZADO" in system_prompt.upper()
+
+
 class TestManejoErrores:
     """Tests para el manejo de errores"""
 

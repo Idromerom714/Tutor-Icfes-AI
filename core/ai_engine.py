@@ -1,6 +1,7 @@
 import streamlit as st
 import base64
 import requests
+from typing import Dict, List, Optional
 
 PROFE_SABER_PROMPT = """
 === IDENTIDAD Y LENGUAJE ===
@@ -77,7 +78,109 @@ Si el estudiante pregunta algo académico desconectado:
 SÉ EXIGENTE Y MOTIVADOR A LA VEZ. Tu misión: enseñar a PENSAR, no a copiar.
 """
 
-def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia="", historial_mensajes=None):
+
+def _instruccion_nivel(nivel_recomendado: str) -> str:
+    """Retorna instrucciones pedagógicas según nivel recomendado."""
+    nivel = (nivel_recomendado or "intermedio").lower()
+
+    if nivel == "basico":
+        return (
+            "NIVEL RECOMENDADO: BASICO. "
+            "Usa preguntas cortas, valida cada micro-paso y evita saltos conceptuales. "
+            "Prioriza comprensión de bases antes de aumentar complejidad."
+        )
+    if nivel == "avanzado":
+        return (
+            "NIVEL RECOMENDADO: AVANZADO. "
+            "Propón retos de mayor complejidad, pide justificación del método y comparación de estrategias. "
+            "Aumenta exigencia sin perder el enfoque socrático."
+        )
+    return (
+        "NIVEL RECOMENDADO: INTERMEDIO. "
+        "Combina repaso conceptual breve con ejercicios aplicados. "
+        "Sube la dificultad de forma progresiva según el desempeño durante la conversación."
+    )
+
+
+def _inferir_nivel_desde_diagnostico(diagnostico_resultado: Optional[Dict[str, object]], materia_actual: str) -> str:
+    """Infere nivel sugerido desde porcentaje de materia o global."""
+    if not diagnostico_resultado:
+        return "intermedio"
+
+    resultados = diagnostico_resultado.get("resultados_por_materia", [])
+    foco = next((m for m in resultados if m.get("materia") == materia_actual), None)
+    if foco:
+        puntaje = float(foco.get("porcentaje", 0))
+    else:
+        puntaje = float(diagnostico_resultado.get("porcentaje_total", 0))
+
+    if puntaje < 45:
+        return "basico"
+    if puntaje < 75:
+        return "intermedio"
+    return "avanzado"
+
+
+def construir_contexto_diagnostico(
+    diagnostico_resultado: Optional[Dict[str, object]],
+    materia_actual: str,
+    nivel_recomendado: Optional[str] = None,
+) -> str:
+    """Convierte el resultado del diagnóstico en instrucciones pedagógicas para el modelo."""
+    if not diagnostico_resultado:
+        nivel = (nivel_recomendado or "intermedio").lower()
+        return (
+            "Sin diagnóstico disponible. Inicia con nivel intermedio y ajusta según respuestas del estudiante.\n"
+            + _instruccion_nivel(nivel)
+        )
+
+    nivel_objetivo = (nivel_recomendado or _inferir_nivel_desde_diagnostico(diagnostico_resultado, materia_actual)).lower()
+
+    porcentaje_total = diagnostico_resultado.get("porcentaje_total", 0)
+    resultados_por_materia: List[Dict[str, object]] = diagnostico_resultado.get("resultados_por_materia", [])
+    recomendaciones: List[str] = diagnostico_resultado.get("recomendaciones", [])
+
+    resumen_materias = []
+    for item in resultados_por_materia:
+        materia = item.get("materia", "General")
+        porcentaje = item.get("porcentaje", 0)
+        temas_reforzar = item.get("temas_reforzar", [])
+        temas_txt = ", ".join(temas_reforzar[:3]) if temas_reforzar else "sin temas críticos"
+        resumen_materias.append(f"- {materia}: {porcentaje}% | reforzar: {temas_txt}")
+
+    foco_materia = next((m for m in resultados_por_materia if m.get("materia") == materia_actual), None)
+    if foco_materia:
+        foco_txt = (
+            f"Materia actual {materia_actual}: {foco_materia.get('porcentaje', 0)}%. "
+            f"Temas prioritarios: {', '.join(foco_materia.get('temas_reforzar', [])[:3]) or 'ninguno específico'}."
+        )
+    else:
+        foco_txt = f"No hay datos específicos para {materia_actual}; extrapola desde debilidades globales."
+
+    recomendaciones_txt = "\n".join([f"- {rec}" for rec in recomendaciones[:4]]) or "- Sin recomendaciones registradas"
+    materias_txt = "\n".join(resumen_materias) or "- Sin resultados por materia"
+
+    return (
+        "PERFIL DIAGNÓSTICO DEL ESTUDIANTE (USO OBLIGATORIO):\n"
+        f"- Puntaje global: {porcentaje_total}%\n"
+        f"- Resumen por materia:\n{materias_txt}\n"
+        f"- Foco de sesión: {foco_txt}\n"
+        f"- Nivel recomendado en esta sesión: {nivel_objetivo}\n"
+        f"- Recomendaciones pedagógicas:\n{recomendaciones_txt}\n"
+        f"- Ajuste por nivel:\n{_instruccion_nivel(nivel_objetivo)}\n"
+        "Instrucción: prioriza preguntas socráticas en debilidades detectadas y aumenta dificultad de forma progresiva."
+    )
+
+
+def llamar_profe_saber(
+    mensaje_usuario,
+    contexto_pdf,
+    imagen_bytes=None,
+    materia="",
+    historial_mensajes=None,
+    diagnostico_resultado: Optional[Dict[str, object]] = None,
+    nivel_recomendado: Optional[str] = None,
+):
     """
     Llama al modelo de IA con memoria de conversación.
     
@@ -87,6 +190,8 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
         imagen_bytes: Imagen opcional adjunta
         materia: Materia actual de estudio
         historial_mensajes: Lista de mensajes previos [{"role": "user"|"assistant", "content": "..."}]
+        diagnostico_resultado: Resultado del diagnóstico inicial para personalización pedagógica
+        nivel_recomendado: Nivel pedagógico sugerido (basico, intermedio, avanzado)
     """
     if "OPENROUTER_API_KEY" not in st.secrets:
         return "❌ Error: Falta la API Key en Secrets."
@@ -164,7 +269,13 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
     }
     
     # Construir mensajes con historial completo
-    mensajes_completos = [{"role": "system", "content": PROFE_SABER_PROMPT + instruccion_rigor}]
+    contexto_diagnostico = construir_contexto_diagnostico(diagnostico_resultado, materia, nivel_recomendado=nivel_recomendado)
+    mensajes_completos = [
+        {
+            "role": "system",
+            "content": PROFE_SABER_PROMPT + "\n\n" + instruccion_rigor + "\n\n" + contexto_diagnostico,
+        }
+    ]
     
     # Agregar historial previo de la conversación
     for msg_previo in historial_mensajes:
@@ -175,7 +286,15 @@ def llamar_profe_saber(mensaje_usuario, contexto_pdf, imagen_bytes=None, materia
         })
     
     # Preparar el mensaje actual con contexto
-    contenido_usuario_actual = [{"type": "text", "text": f"MATERIA: {materia}\nBIBLIOTECA: {contexto_pdf}\n\nDUDA: {mensaje_usuario}"}]
+    contenido_usuario_actual = [{
+        "type": "text",
+        "text": (
+            f"MATERIA: {materia}\n"
+            f"PERFIL_APRENDIZAJE: {contexto_diagnostico}\n"
+            f"BIBLIOTECA: {contexto_pdf}\n\n"
+            f"DUDA: {mensaje_usuario}"
+        ),
+    }]
     
     if imagen_bytes:
         encoded_image = base64.b64encode(imagen_bytes).decode("utf-8")

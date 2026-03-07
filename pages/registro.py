@@ -15,8 +15,9 @@ def telefono_valido(telefono):
 
 # --- ENCABEZADO ---
 st.title("📝 Crear cuenta")
-st.caption("El padre, madre o tutor debe realizar el registro.")
-st.caption("Una vez completes el formulario, nos pondremos en contacto contigo para validar tu pago y activar tu cuenta.")
+st.subheader("¡Bienvenido al proceso de registro del Tutor ICFES!")
+st.subheader("El padre, madre o tutor debe realizar el registro.")
+st.subheader("Una vez completes el formulario, nos pondremos en contacto contigo para validar tu información y activar tu cuenta.")
 st.divider()
 
 # --- PASO 1: DATOS DEL PADRE ---

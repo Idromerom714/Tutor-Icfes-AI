@@ -201,5 +201,76 @@ class TestObtenerEstudiante:
         assert resultado is None
 
 
+class TestDiagnosticoEstudiante:
+    """Tests para persistencia de diagnóstico."""
+
+    @patch("core.database.supabase_admin")
+    def test_obtener_ultimo_diagnostico_existente(self, mock_supabase_admin):
+        """Debe retornar el último diagnóstico cuando existe."""
+        from core.database import obtener_ultimo_diagnostico
+
+        mock_data = [{"estudiante_id": 1, "resultado": {"porcentaje_total": 72.0}}]
+        mock_supabase_admin.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = mock_data
+
+        resultado = obtener_ultimo_diagnostico(1)
+
+        assert resultado is not None
+        assert resultado["resultado"]["porcentaje_total"] == 72.0
+
+    @patch("core.database.supabase_admin")
+    def test_obtener_ultimo_diagnostico_si_falla_retorna_none(self, mock_supabase_admin):
+        """Debe retornar None cuando hay excepción (ej. tabla no existe aún)."""
+        from core.database import obtener_ultimo_diagnostico
+
+        mock_supabase_admin.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.side_effect = Exception("Table missing")
+
+        resultado = obtener_ultimo_diagnostico(1)
+
+        assert resultado is None
+
+    @patch("core.database.supabase_admin")
+    def test_guardar_diagnostico_estudiante(self, mock_supabase_admin):
+        """Debe intentar insertar el diagnóstico."""
+        from core.database import guardar_diagnostico_estudiante
+
+        mock_supabase_admin.table.return_value.insert.return_value.execute.return_value = MagicMock()
+
+        resultado = guardar_diagnostico_estudiante(
+            estudiante_id=1,
+            email_padre="test@ejemplo.com",
+            resultado={"porcentaje_total": 80.0, "recomendaciones": ["Refuerza Física"]},
+        )
+
+        assert resultado is not None
+        mock_supabase_admin.table.return_value.insert.assert_called_once()
+
+    @patch("core.database.supabase_admin")
+    def test_listar_diagnosticos_estudiante(self, mock_supabase_admin):
+        """Debe retornar lista de diagnósticos recientes."""
+        from core.database import listar_diagnosticos_estudiante
+
+        mock_data = [
+            {"puntaje": 45.0, "creado_el": "2026-03-01T10:00:00+00:00"},
+            {"puntaje": 52.0, "creado_el": "2026-03-08T10:00:00+00:00"},
+        ]
+        mock_supabase_admin.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = mock_data
+
+        resultado = listar_diagnosticos_estudiante(estudiante_id=1, limite=4)
+
+        assert len(resultado) == 2
+        assert resultado[0]["puntaje"] == 45.0
+
+    @patch("core.database.supabase_admin")
+    def test_listar_diagnosticos_estudiante_fallback_vacio(self, mock_supabase_admin):
+        """Si falla la consulta, debe retornar lista vacía."""
+        from core.database import listar_diagnosticos_estudiante
+
+        mock_supabase_admin.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.side_effect = Exception("Table missing")
+
+        resultado = listar_diagnosticos_estudiante(estudiante_id=1, limite=4)
+
+        assert resultado == []
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
