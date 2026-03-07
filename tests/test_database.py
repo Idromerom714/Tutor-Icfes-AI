@@ -63,6 +63,55 @@ class TestDescontarEnergia:
         )
 
 
+class TestConsumoEnergia:
+    """Tests para registrar/listar consumo de energia."""
+
+    @patch("core.database.supabase_admin")
+    def test_registrar_consumo_energia(self, mock_supabase_admin):
+        """Debe intentar insertar un registro de consumo."""
+        from core.database import registrar_consumo_energia
+
+        mock_supabase_admin.table.return_value.insert.return_value.execute.return_value = MagicMock()
+
+        registrar_consumo_energia(
+            email_padre="test@ejemplo.com",
+            estudiante_id=5,
+            cantidad=12,
+            materia="Matemáticas",
+            metadata={"costo_base": 1},
+        )
+
+        llamada = mock_supabase_admin.table.return_value.insert.call_args[0][0]
+        assert llamada["email_padre"] == "test@ejemplo.com"
+        assert llamada["estudiante_id"] == 5
+        assert llamada["cantidad"] == 12
+
+    @patch("core.database.supabase_admin")
+    def test_listar_consumo_energia(self, mock_supabase_admin):
+        """Debe retornar lista de consumos."""
+        from core.database import listar_consumo_energia
+
+        mock_data = [{"email_padre": "test@ejemplo.com", "cantidad": 8}]
+        query = mock_supabase_admin.table.return_value.select.return_value.eq.return_value
+        query.gte.return_value.lte.return_value.order.return_value.execute.return_value.data = mock_data
+
+        resultado = listar_consumo_energia("test@ejemplo.com", fecha_inicio="2026-03-01", fecha_fin="2026-03-07")
+
+        assert len(resultado) == 1
+        assert resultado[0]["cantidad"] == 8
+
+    @patch("core.database.supabase_admin")
+    def test_listar_consumo_energia_si_falla_retorna_vacio(self, mock_supabase_admin):
+        """Si falla la consulta, debe retornar lista vacia."""
+        from core.database import listar_consumo_energia
+
+        mock_supabase_admin.table.return_value.select.return_value.eq.return_value.order.return_value.execute.side_effect = Exception("No table")
+
+        resultado = listar_consumo_energia("test@ejemplo.com")
+
+        assert resultado == []
+
+
 class TestGuardarOActualizarChat:
     """Tests para guardar_o_actualizar_chat"""
 
@@ -111,6 +160,33 @@ class TestGuardarOActualizarChat:
         )
 
         mock_supabase_admin.table.return_value.update.assert_called_once()
+
+
+class TestListarChatsUsuario:
+    """Tests para listar_chats_usuario"""
+
+    @patch("core.database.supabase_admin")
+    def test_listar_chats_sin_filtro_estudiante(self, mock_supabase_admin):
+        """Debe listar chats por email sin aplicar filtro de estudiante."""
+        from core.database import listar_chats_usuario
+
+        listar_chats_usuario("test@ejemplo.com")
+
+        mock_supabase_admin.table.return_value.select.return_value.eq.assert_called_once_with(
+            "email_usuario", "test@ejemplo.com"
+        )
+
+    @patch("core.database.supabase_admin")
+    def test_listar_chats_con_filtro_estudiante(self, mock_supabase_admin):
+        """Debe filtrar por estudiante cuando se envía estudiante_id."""
+        from core.database import listar_chats_usuario
+
+        query_mock = mock_supabase_admin.table.return_value.select.return_value.eq.return_value
+        query_mock.eq.return_value.order.return_value.execute.return_value = MagicMock()
+
+        listar_chats_usuario("test@ejemplo.com", estudiante_id=55)
+
+        query_mock.eq.assert_called_once_with("estudiante_id", 55)
 
 
 class TestIntentosFallidos:
@@ -199,6 +275,121 @@ class TestObtenerEstudiante:
         resultado = obtener_estudiante(999)
 
         assert resultado is None
+
+
+class TestGestionEstudiantes:
+    """Tests para listar/crear estudiantes."""
+
+    @patch("core.database.supabase_admin")
+    def test_listar_estudiantes(self, mock_supabase_admin):
+        """Debe retornar los estudiantes asociados al padre."""
+        from core.database import listar_estudiantes
+
+        mock_data = [
+            {"id": 1, "padre_id": 100, "nombre": "Ana", "grado": "10°"},
+            {"id": 2, "padre_id": 100, "nombre": "Luis", "grado": "11°"},
+        ]
+        mock_supabase_admin.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.execute.return_value.data = mock_data
+
+        resultado = listar_estudiantes(100)
+
+        assert len(resultado) == 2
+        assert resultado[0]["nombre"] == "Ana"
+
+        # Debe filtrar por activos cuando la columna existe.
+        mock_supabase_admin.table.return_value.select.return_value.eq.return_value.eq.assert_called_once_with("activo", True)
+
+    @patch("core.database.supabase_admin")
+    def test_listar_estudiantes_si_falla_retorna_lista_vacia(self, mock_supabase_admin):
+        """Debe retornar [] cuando falla la consulta."""
+        from core.database import listar_estudiantes
+
+        mock_supabase_admin.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.execute.side_effect = Exception("No data")
+        mock_supabase_admin.table.return_value.select.return_value.eq.return_value.order.return_value.execute.side_effect = Exception("No data")
+
+        resultado = listar_estudiantes(100)
+
+        assert resultado == []
+
+    @patch("core.database.supabase_admin")
+    def test_listar_estudiantes_fallback_sin_columna_activo(self, mock_supabase_admin):
+        """Si no existe columna activo, debe usar query sin filtro y retornar data."""
+        from core.database import listar_estudiantes
+
+        tabla = mock_supabase_admin.table.return_value
+        first_eq = tabla.select.return_value.eq.return_value
+        first_eq.eq.side_effect = Exception("column activo does not exist")
+
+        fallback_data = [{"id": 9, "padre_id": 100, "nombre": "Sofi", "grado": "10°"}]
+        tabla.select.return_value.eq.return_value.order.return_value.execute.return_value.data = fallback_data
+
+        resultado = listar_estudiantes(100)
+
+        assert len(resultado) == 1
+        assert resultado[0]["nombre"] == "Sofi"
+
+    @patch("core.database.supabase_admin")
+    def test_crear_estudiante(self, mock_supabase_admin):
+        """Debe insertar un nuevo estudiante asociado al padre."""
+        from core.database import crear_estudiante
+
+        mock_supabase_admin.table.return_value.insert.return_value.execute.return_value = MagicMock()
+
+        crear_estudiante(100, "Maria", "11°")
+
+        llamada = mock_supabase_admin.table.return_value.insert.call_args[0][0]
+        assert llamada["padre_id"] == 100
+        assert llamada["nombre"] == "Maria"
+        assert llamada["grado"] == "11°"
+
+    @patch("core.database.supabase_admin")
+    def test_crear_estudiante_con_pin_hash(self, mock_supabase_admin):
+        """Debe almacenar pin_hash cuando se envía en la creación."""
+        from core.database import crear_estudiante
+
+        mock_supabase_admin.table.return_value.insert.return_value.execute.return_value = MagicMock()
+
+        crear_estudiante(100, "Maria", "11°", pin_hash="hash_demo")
+
+        llamada = mock_supabase_admin.table.return_value.insert.call_args[0][0]
+        assert llamada["pin_hash"] == "hash_demo"
+
+    @patch("core.database.supabase_admin")
+    def test_renombrar_estudiante(self, mock_supabase_admin):
+        """Debe actualizar nombre del estudiante filtrando por padre."""
+        from core.database import renombrar_estudiante
+
+        mock_supabase_admin.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock()
+
+        renombrar_estudiante(estudiante_id=5, padre_id=100, nuevo_nombre="Mariana")
+
+        llamada = mock_supabase_admin.table.return_value.update.call_args[0][0]
+        assert llamada["nombre"] == "Mariana"
+
+    @patch("core.database.supabase_admin")
+    def test_actualizar_pin_estudiante(self, mock_supabase_admin):
+        """Debe actualizar el pin hash del estudiante."""
+        from core.database import actualizar_pin_estudiante
+
+        mock_supabase_admin.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock()
+
+        actualizar_pin_estudiante(estudiante_id=5, padre_id=100, nuevo_pin_hash="nuevo_hash")
+
+        llamada = mock_supabase_admin.table.return_value.update.call_args[0][0]
+        assert llamada["pin_hash"] == "nuevo_hash"
+
+    @patch("core.database.supabase_admin")
+    def test_desactivar_estudiante(self, mock_supabase_admin):
+        """Debe marcar estudiante como inactivo."""
+        from core.database import desactivar_estudiante
+
+        mock_supabase_admin.table.return_value.update.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock()
+
+        desactivar_estudiante(estudiante_id=5, padre_id=100)
+
+        llamada = mock_supabase_admin.table.return_value.update.call_args[0][0]
+        assert llamada["activo"] is False
+        assert "desactivado_el" in llamada
 
 
 class TestDiagnosticoEstudiante:

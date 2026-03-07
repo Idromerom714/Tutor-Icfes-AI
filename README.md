@@ -35,6 +35,12 @@ Guía express para empezar a estudiar en menos de 2 minutos:
 
 **Tip**: Para mejores resultados, incluye tema + grado + qué parte no entiendes.
 
+## 🗂️ Estructura de páginas (Streamlit)
+
+- `app.py`: Panel principal del padre (login, creación de hijos, leaderboard, progreso y energía por rango).
+- `pages/registro.py`: Registro de cuenta padre + primer hijo.
+- `pages/estudiante.py`: Entrada de estudiantes y entorno de estudio/chat.
+
 ## 📑 Tabla de Contenidos
 
 - [Descripción General](#-descripción-general)
@@ -396,7 +402,42 @@ Hijos o pupilos asociados a una cuenta padre.
 | `padre_id` | UUID | FK a `padres.id` |
 | `nombre` | TEXT | Nombre del estudiante |
 | `grado` | INTEGER | Grado escolar (6-11) |
+| `pin_hash` | TEXT | Hash bcrypt del PIN del estudiante (segunda autenticación) |
+| `activo` | BOOLEAN | `TRUE` si el entorno del estudiante está habilitado |
+| `desactivado_el` | TIMESTAMPTZ | Fecha/hora de desactivación (si aplica) |
 | `fecha_registro` | TIMESTAMP | Fecha de alta |
+
+**Migración recomendada para gestión de múltiples hijos (PIN, renombrar/desactivar):**
+
+```sql
+ALTER TABLE estudiantes
+ADD COLUMN IF NOT EXISTS pin_hash TEXT;
+
+ALTER TABLE estudiantes
+ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT TRUE;
+
+ALTER TABLE estudiantes
+ADD COLUMN IF NOT EXISTS desactivado_el TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS idx_estudiantes_padre_activo
+ON estudiantes (padre_id, activo);
+
+CREATE TABLE IF NOT EXISTS consumo_energia (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email_padre TEXT NOT NULL,
+  estudiante_id UUID REFERENCES estudiantes(id),
+  cantidad INTEGER NOT NULL,
+  materia TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  creado_el TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_consumo_energia_padre_fecha
+ON consumo_energia (email_padre, creado_el);
+
+CREATE INDEX IF NOT EXISTS idx_consumo_energia_estudiante
+ON consumo_energia (estudiante_id, creado_el);
+```
 
 #### Tabla: `historial_chats`
 
@@ -437,6 +478,20 @@ Resultados del diagnóstico inicial/semanal por estudiante.
 | `resultado` | JSONB | Resultado completo del diagnóstico (por materia, temas a reforzar, recomendaciones) |
 | `puntaje` | NUMERIC(5,2) | Puntaje global en porcentaje |
 | `creado_el` | TIMESTAMPTZ | Fecha/hora del diagnóstico |
+
+#### Tabla: `consumo_energia`
+
+Consumo de créditos por estudiante para analítica del panel padre.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id` | UUID | Identificador único |
+| `email_padre` | TEXT | Email del padre/tutor |
+| `estudiante_id` | UUID | FK a `estudiantes.id` |
+| `cantidad` | INTEGER | Energía consumida |
+| `materia` | TEXT | Materia activa al momento del consumo |
+| `metadata` | JSONB | Detalles de costos (ej. foto, costo base) |
+| `creado_el` | TIMESTAMPTZ | Fecha/hora del consumo |
 
 ### Funciones RPC requeridas
 

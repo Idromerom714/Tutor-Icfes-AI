@@ -2,7 +2,7 @@
 
 import streamlit as st
 from core.auth import hashear_pin
-from core.database import supabase_admin as supabase
+from core.database import supabase_admin as supabase, crear_estudiante
 import re
 
 st.set_page_config(page_title="Registro — Tutor ICFES", page_icon="📝")
@@ -32,9 +32,12 @@ with st.form("form_registro"):
     st.divider()
 
     # --- PASO 2: DATOS DEL ESTUDIANTE ---
-    st.subheader("2. Datos del estudiante")
+    st.subheader("2. Datos del primer estudiante")
+    st.caption("Podrás agregar más hijos desde el panel principal una vez la cuenta esté activa.")
     nombre_estudiante = st.text_input("Nombre del estudiante *")
     grado = st.selectbox("Grado *", ["10°", "11°"])
+    pin_estudiante = st.text_input("PIN del estudiante (mínimo 4 dígitos) *", type="password")
+    pin_estudiante_confirmar = st.text_input("Confirmar PIN del estudiante *", type="password")
 
     st.divider()
 
@@ -89,6 +92,8 @@ if submitted:
     if len(pin) < 6: errores.append("El PIN debe tener mínimo 6 dígitos.")
     if pin != pin_confirmar: errores.append("Los PINs no coinciden.")
     if not nombre_estudiante: errores.append("Nombre del estudiante es obligatorio.")
+    if len(pin_estudiante) < 4: errores.append("El PIN del estudiante debe tener mínimo 4 dígitos.")
+    if pin_estudiante != pin_estudiante_confirmar: errores.append("Los PIN del estudiante no coinciden.")
     if not acepto_politica: errores.append("Debes aceptar la política de tratamiento de datos.")
     if not soy_tutor: errores.append("Debes confirmar que eres padre, madre o tutor legal.")
 
@@ -118,11 +123,19 @@ if submitted:
                 padre_id = res_padre.data[0]["id"]
 
                 # Crear estudiante
-                supabase.table("estudiantes").insert({
-                    "padre_id": padre_id,
-                    "nombre": nombre_estudiante,
-                    "grado": grado
-                }).execute()
+                pin_estudiante_hash = hashear_pin(pin_estudiante)
+                res_est = crear_estudiante(
+                    padre_id=padre_id,
+                    nombre=nombre_estudiante,
+                    grado=grado,
+                    pin_hash=pin_estudiante_hash,
+                )
+                est_insertado = (res_est.data[0] if getattr(res_est, "data", None) else None)
+                if est_insertado and ("pin_hash" not in est_insertado or not est_insertado.get("pin_hash")):
+                    st.warning(
+                        "Registro completado, pero el PIN del estudiante no quedó persistido en BD. "
+                        "Aplica la migración de `pin_hash` para habilitar entrada del estudiante por PIN."
+                    )
 
                 # Registrar consentimiento
                 supabase.table("consentimientos").insert({
