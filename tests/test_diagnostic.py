@@ -56,6 +56,21 @@ class TestObtenerPreguntasDiagnostico:
         assert len(enunciados) == len(variantes_mat)
         assert all("ecuación" in q.enunciado.lower() for q in variantes_mat)
 
+    def test_diagnostico_inicial_sin_enunciados_repetidos(self):
+        from core.diagnostic import obtener_preguntas_diagnostico
+
+        preguntas = obtener_preguntas_diagnostico(cantidad=15, semilla=20260307)
+        firmas = {f"{p['materia']}::{' '.join(p['enunciado'].strip().lower().split())}" for p in preguntas}
+
+        assert len(firmas) == len(preguntas)
+
+    def test_diagnostico_no_muestra_sufijo_escenario(self):
+        from core.diagnostic import obtener_preguntas_diagnostico
+
+        preguntas = obtener_preguntas_diagnostico(cantidad=15, semilla=20260309)
+
+        assert all("(Escenario:" not in p["enunciado"] for p in preguntas)
+
 
 class TestEvaluarDiagnostico:
     """Tests para evaluación y recomendaciones."""
@@ -129,9 +144,12 @@ class TestSeguimientoSemanal:
         }
 
         plan = generar_plan_semanal(resultado)
+    hoy = datetime.now().date()
+    fechas_esperadas = [(hoy + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
 
         assert len(plan) == 7
         assert all("dia" in bloque and "materia" in bloque for bloque in plan)
+    assert [bloque["dia"] for bloque in plan] == fechas_esperadas
 
     def test_diagnostico_requiere_renovacion_cada_7_dias(self):
         from core.diagnostic import diagnostico_requiere_renovacion
@@ -200,6 +218,30 @@ class TestSeguimientoSemanal:
             p["materia"] == "Matemáticas" and p.get("dificultad") == "basico"
             for p in preguntas
         )
+
+    def test_diagnostico_adaptativo_sin_enunciados_repetidos(self):
+        from core.diagnostic import obtener_preguntas_diagnostico_adaptativo
+
+        diagnostico_anterior = {
+            "resultados_por_materia": [
+                {"materia": "Matemáticas", "porcentaje": 35, "temas_reforzar": ["Álgebra básica", "Proporcionalidad"]},
+                {"materia": "Física", "porcentaje": 42, "temas_reforzar": ["Movimiento uniforme"]},
+                {"materia": "Inglés", "porcentaje": 80, "temas_reforzar": []},
+            ],
+            "temas_evaluados": [
+                {"materia": "Matemáticas", "tema": "Álgebra básica"},
+                {"materia": "Física", "tema": "Movimiento uniforme"},
+            ],
+        }
+
+        preguntas = obtener_preguntas_diagnostico_adaptativo(
+            cantidad=12,
+            diagnostico_anterior=diagnostico_anterior,
+            semilla=20260308,
+        )
+
+        firmas = {f"{p['materia']}::{' '.join(p['enunciado'].strip().lower().split())}" for p in preguntas}
+        assert len(firmas) == len(preguntas)
 
 
 if __name__ == "__main__":

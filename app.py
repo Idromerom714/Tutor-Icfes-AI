@@ -1,3 +1,4 @@
+# app.py
 import streamlit as st
 from datetime import datetime, timedelta
 
@@ -7,6 +8,7 @@ from core.database import (
     resetear_intentos,
     registrar_intento_fallido,
     listar_estudiantes,
+    contar_estudiantes_padre,
     crear_estudiante,
     obtener_ultimo_diagnostico,
     listar_diagnosticos_estudiante,
@@ -135,16 +137,29 @@ def _render_crear_hijo(user):
         return
 
     try:
+        total_antes = contar_estudiantes_padre(user["id"])
+
         pin_hash = hashear_pin(pin_hijo)
         res = crear_estudiante(user["id"], nombre.strip(), grado, pin_hash=pin_hash)
         nuevo = (res.data[0] if getattr(res, "data", None) else None)
+
+        total_despues = contar_estudiantes_padre(user["id"])
+
+        if total_despues <= total_antes:
+            st.warning(
+                "Solicitud enviada, pero no se pudo verificar el conteo en este momento. "
+                "Recarga la página y revisa si aparece el hijo en el panel."
+            )
+            st.rerun()
+
         if nuevo and ("pin_hash" not in nuevo or not nuevo.get("pin_hash")):
             st.warning(
                 "Hijo creado, pero sin PIN persistido en BD. Aplica migración de `pin_hash` para habilitar entrada del estudiante."
             )
         else:
             st.success("Hijo creado correctamente.")
-        st.rerun()
+
+        # No hacemos rerun inmediato para que el mensaje no desaparezca.
     except Exception as exc:
         st.error(f"No fue posible crear el hijo: {exc}")
 
@@ -228,7 +243,7 @@ def _render_energia_rango(user, estudiantes):
 
     if not consumos:
         st.caption(
-            "Sin datos de consumo en este rango. Si es la primera vez, aplica la migracion de tabla `consumo_energia`."
+            "Sin datos de consumo en este rango."
         )
         return
 

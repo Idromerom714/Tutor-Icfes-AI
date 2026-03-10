@@ -304,8 +304,7 @@ class TestGestionEstudiantes:
         """Debe retornar [] cuando falla la consulta."""
         from core.database import listar_estudiantes
 
-        mock_supabase_admin.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.execute.side_effect = Exception("No data")
-        mock_supabase_admin.table.return_value.select.return_value.eq.return_value.order.return_value.execute.side_effect = Exception("No data")
+        mock_supabase_admin.table.return_value.select.return_value.eq.side_effect = Exception("No data")
 
         resultado = listar_estudiantes(100)
 
