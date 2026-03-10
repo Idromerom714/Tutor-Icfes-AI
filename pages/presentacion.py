@@ -664,7 +664,7 @@ render_html("""
             <div class="plan-name">Básico</div>
             <div class="plan-price">$20.000</div>
             <div class="plan-period">COP / mes · 1 estudiante</div>
-            <div class="plan-feat">⚡ 2 000 créditos mensuales</div>
+            <div class="plan-feat">⚡ 1 000 créditos mensuales</div>
             <div class="plan-feat">📋 Diagnóstico adaptativo semanal</div>
             <div class="plan-feat">💬 Tutor en las 5 materias</div>
             <div class="plan-feat">📄 Exportación a PDF</div>
@@ -674,9 +674,9 @@ render_html("""
         <div class="plan-card destacado">
             <span class="plan-badge">Más popular</span>
             <div class="plan-name">Estándar</div>
-            <div class="plan-price">$20.000</div>
+            <div class="plan-price">$30.000</div>
             <div class="plan-period">COP / mes · 1 estudiante</div>
-            <div class="plan-feat">⚡ 3 000 créditos mensuales</div>
+            <div class="plan-feat">⚡ 2 000 créditos mensuales</div>
             <div class="plan-feat">📋 Diagnóstico adaptativo semanal</div>
             <div class="plan-feat">💬 Tutor en las 5 materias</div>
             <div class="plan-feat">📄 Exportación a PDF</div>
@@ -685,9 +685,9 @@ render_html("""
 
         <div class="plan-card">
             <div class="plan-name">Familia</div>
-            <div class="plan-price">$20.000</div>
+            <div class="plan-price">$50.000</div>
             <div class="plan-period">COP / mes · hasta 3 estudiantes</div>
-            <div class="plan-feat">⚡ 7 000 créditos compartidos</div>
+            <div class="plan-feat">⚡ 5 000 créditos compartidos</div>
             <div class="plan-feat">📋 Diagnóstico por cada estudiante</div>
             <div class="plan-feat">💬 Tutor en las 5 materias</div>
             <div class="plan-feat">📄 Exportación a PDF</div>
