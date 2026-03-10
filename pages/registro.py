@@ -7,6 +7,9 @@ import re
 
 st.set_page_config(page_title="Registro — Tutor ICFES", page_icon="📝")
 
+if st.button("🚀 Conocer la plataforma", use_container_width=False):
+    st.switch_page("pages/presentacion.py")
+
 def email_valido(email):
     return re.match(r"[^@]+@[^@]+\.[^@]+", email)
 
@@ -33,7 +36,7 @@ with st.form("form_registro"):
 
     # --- PASO 2: DATOS DEL ESTUDIANTE ---
     st.subheader("2. Datos del primer estudiante")
-    st.caption("Podrás agregar más hijos desde el panel principal una vez la cuenta esté activa.")
+    st.caption("Podrás agregar más hijos desde el panel principal solo si tu cuenta tiene plan Familiar.")
     nombre_estudiante = st.text_input("Nombre del estudiante *")
     grado = st.selectbox("Grado *", ["10°", "11°"])
     pin_estudiante = st.text_input("PIN del estudiante (mínimo 4 dígitos) *", type="password")

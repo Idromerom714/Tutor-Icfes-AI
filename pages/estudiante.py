@@ -74,13 +74,16 @@ def _render_login():
     st.title("🎓 El Profe Saber")
     st.caption("Inicia sesión con el correo del padre y tu PIN de estudiante.")
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("¿No tienes cuenta? Regístrate →", use_container_width=True):
             st.switch_page("pages/registro.py")
     with col2:
         if st.button("Panel del padre →", use_container_width=True):
             st.switch_page("app.py")
+    with col3:
+        if st.button("Ver presentación →", use_container_width=True):
+            st.switch_page("pages/presentacion.py")
 
     with st.form("login_estudiante"):
         email_padre = st.text_input("Correo del padre")

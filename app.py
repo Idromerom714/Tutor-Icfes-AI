@@ -43,13 +43,16 @@ def _render_login_padre():
     st.title("👨‍👩‍👧 Panel del Padre")
     st.caption("Centro de control para crear hijos, revisar progreso y monitorear consumo de energía.")
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("📝 Ir a Registro", use_container_width=True):
             st.switch_page("pages/registro.py")
     with col2:
         if st.button("🎓 Entrada Estudiantes", use_container_width=True):
             st.switch_page("pages/estudiante.py")
+    with col3:
+        if st.button("🚀 Ver Presentacion", use_container_width=True):
+            st.switch_page("pages/presentacion.py")
 
     with st.form("parent_login_form"):
         email = st.text_input("Correo del padre")
@@ -110,12 +113,30 @@ def _render_sidebar(user):
             st.switch_page("pages/estudiante.py")
         if st.button("📝 Ir a Registro", use_container_width=True):
             st.switch_page("pages/registro.py")
+        if st.button("🚀 Ver Presentacion", use_container_width=True):
+            st.switch_page("pages/presentacion.py")
         if st.button("🚪 Cerrar sesion", use_container_width=True):
             _logout_parent()
 
 
 def _render_crear_hijo(user):
     st.subheader("➕ Crear nuevo hijo")
+
+    plan = str(user.get("plan", "basico") or "basico").strip().lower()
+    es_plan_familiar = plan == "familia"
+    max_hijos_familiar = 3
+    total_actual = contar_estudiantes_padre(user["id"])
+
+    if es_plan_familiar and total_actual >= max_hijos_familiar:
+        st.info("Tu plan Familiar permite hasta 3 hijos. Ya alcanzaste el limite.")
+        return
+
+    if not es_plan_familiar and total_actual >= 1:
+        st.info(
+            "Tu plan actual permite 1 hijo. Para agregar varios hijos, cambia al plan Familiar."
+        )
+        return
+
     with st.form("form_nuevo_hijo_dashboard"):
         nombre = st.text_input("Nombre del hijo")
         grado = st.selectbox("Grado", ["10°", "11°"])
@@ -138,6 +159,16 @@ def _render_crear_hijo(user):
 
     try:
         total_antes = contar_estudiantes_padre(user["id"])
+
+        if es_plan_familiar and total_antes >= max_hijos_familiar:
+            st.error("Tu plan Familiar permite hasta 3 hijos. Ya alcanzaste el limite.")
+            return
+
+        if not es_plan_familiar and total_antes >= 1:
+            st.error(
+                "Tu plan actual permite 1 hijo. Solo el plan Familiar permite crear varios hijos."
+            )
+            return
 
         pin_hash = hashear_pin(pin_hijo)
         res = crear_estudiante(user["id"], nombre.strip(), grado, pin_hash=pin_hash)
