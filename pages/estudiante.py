@@ -89,6 +89,30 @@ h1, h2, h3 {
     background: #fff;
 }
 
+[data-testid="stChatMessage"] [data-testid="stMarkdownContainer"],
+[data-testid="stChatMessage"] p,
+[data-testid="stChatMessage"] li,
+[data-testid="stChatMessage"] span {
+    color: #0d1f2d !important;
+}
+
+[data-testid="stChatMessage"] a {
+    color: #0b4f87 !important;
+    text-decoration: underline;
+}
+
+[data-testid="stChatMessage"] code {
+    color: #0b2844 !important;
+    background: #ecf3fa;
+    border-radius: 4px;
+    padding: 0.1rem 0.28rem;
+}
+
+[data-testid="stChatMessage"] pre code {
+    color: #0d1f2d !important;
+    background: #f2f7fc;
+}
+
 [data-testid="stChatMessage"][aria-label="Chat message from assistant"] {
     border-left: 4px solid var(--acento);
 }
