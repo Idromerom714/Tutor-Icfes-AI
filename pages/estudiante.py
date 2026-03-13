@@ -34,6 +34,107 @@ from core.diagnostic import (
 
 st.set_page_config(page_title="El Profe Saber — Estudiante", page_icon="🎓")
 
+
+def _render_html(content: str) -> None:
+    if hasattr(st, "html"):
+        st.html(content)
+    else:
+        st.markdown(content, unsafe_allow_html=True)
+
+
+def _inject_theme_styles() -> None:
+    _render_html(
+        """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=DM+Sans:wght@400;500;700&display=swap');
+
+:root {
+    --azul: #0d2d4e;
+    --azul-m: #1a5080;
+    --naranja: #e8600a;
+    --acento: #1a5080;
+    --crema: #f5f0e8;
+    --hueso: #ede8de;
+    --tinta: #0d1f2d;
+    --gris: #5a7080;
+}
+
+.stApp {
+    background: radial-gradient(circle at 100% 0%, rgba(26,80,128,0.09), transparent 32%), var(--crema);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--tinta);
+}
+
+h1, h2, h3 {
+    font-family: 'Fraunces', serif !important;
+    color: var(--azul) !important;
+}
+
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0b2743 0%, #113a5f 100%);
+}
+
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+    color: #f5f0e8 !important;
+}
+
+[data-testid="stChatMessage"] {
+    border-radius: 12px;
+    border: 1px solid rgba(13,45,78,0.11);
+    background: #fff;
+}
+
+[data-testid="stChatMessage"][aria-label="Chat message from assistant"] {
+    border-left: 4px solid var(--acento);
+}
+
+[data-testid="stForm"] {
+    background: #fff;
+    border: 1px solid rgba(13,45,78,0.14);
+    border-radius: 14px;
+    padding: 1rem 1rem 1.2rem;
+}
+
+.stButton > button,
+[data-testid="stFormSubmitButton"] > button,
+[data-testid="stDownloadButton"] > button {
+    background: var(--acento) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 6px 18px rgba(26,80,128,0.30) !important;
+}
+
+.stButton > button:hover,
+[data-testid="stFormSubmitButton"] > button:hover,
+[data-testid="stDownloadButton"] > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(26,80,128,0.38) !important;
+}
+
+div[data-baseweb="input"] input,
+div[data-baseweb="select"] > div,
+div[data-baseweb="textarea"] textarea {
+    border-radius: 10px !important;
+    border: 1px solid rgba(13,45,78,0.2) !important;
+}
+
+[data-testid="stFileUploader"] {
+    background: #fff;
+    border: 1px dashed rgba(13,45,78,0.35);
+    border-radius: 12px;
+    padding: 0.4rem;
+}
+</style>
+        """
+    )
+
 # ─────────────────────────────────────────────────────────────────────────────
 # ESTADO DE SESIÓN
 # ─────────────────────────────────────────────────────────────────────────────
@@ -59,6 +160,7 @@ def _init_session():
             st.session_state[k] = v
 
 _init_session()
+_inject_theme_styles()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # LOGIN

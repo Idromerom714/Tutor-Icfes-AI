@@ -423,6 +423,71 @@ section[data-testid="stSidebar"] { display: none; }
 .plan-feat:last-of-type { border-bottom: none; }
 
 /* ══════════════════════════════════
+   REGISTRO
+══════════════════════════════════ */
+.registro-shell {
+    padding: 5rem 8vw;
+    background:
+        radial-gradient(circle at 90% 15%, rgba(232,96,10,0.24) 0%, rgba(232,96,10,0) 42%),
+        linear-gradient(180deg, #0b243c 0%, #123a5c 100%);
+}
+
+.registro-kicker {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.78);
+    margin-bottom: 0.7rem;
+}
+
+.registro-title {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2rem, 3.5vw, 2.9rem);
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 0.8rem;
+}
+
+.registro-sub {
+    max-width: 680px;
+    font-size: 0.96rem;
+    line-height: 1.65;
+    color: rgba(245,240,232,0.9);
+}
+
+/* Solo hay un formulario en esta página: se estiliza como tarjeta de alto contraste. */
+div[data-testid="stForm"] {
+    background: rgba(7, 21, 35, 0.66);
+    border: 1px solid rgba(245,240,232,0.24);
+    border-radius: 16px;
+    padding: 1.25rem 1.25rem 1.4rem;
+}
+
+div[data-testid="stForm"] h1,
+div[data-testid="stForm"] h2,
+div[data-testid="stForm"] h3,
+div[data-testid="stForm"] p,
+div[data-testid="stForm"] label,
+div[data-testid="stForm"] [data-testid="stWidgetLabel"] {
+    color: #f8f4ed !important;
+}
+
+div[data-testid="stForm"] [data-baseweb="input"] input {
+    background: #fff !important;
+    color: #0d1f2d !important;
+}
+
+div[data-testid="stForm"] [data-baseweb="select"] > div {
+    background: #fff !important;
+    color: #0d1f2d !important;
+}
+
+div[data-testid="stForm"] [data-testid="stMarkdownContainer"] a {
+    color: #ffd2b3 !important;
+}
+
+/* ══════════════════════════════════
    MATERIAS
 ══════════════════════════════════ */
 .materias-row {
@@ -516,10 +581,30 @@ section[data-testid="stSidebar"] { display: none; }
     box-shadow: 0 8px 24px rgba(232,96,10,0.4) !important;
 }
 
+.quick-link-btn {
+    display: inline-block;
+    width: 100%;
+    text-align: center;
+    background: var(--naranja);
+    color: #fff !important;
+    text-decoration: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    padding: 0.75rem 1.1rem;
+    box-shadow: 0 4px 16px rgba(232,96,10,0.3);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.quick-link-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(232,96,10,0.4);
+}
+
 @media (max-width: 640px) {
     .hero { padding: 4rem 6vw 3rem; }
     .hero-stats { gap: 1.5rem; }
-    .section, .how-section, .planes-section, .cta-section { padding: 4rem 6vw; }
+    .section, .how-section, .planes-section, .registro-shell, .cta-section { padding: 4rem 6vw; }
 }
 </style>""")
 
@@ -664,9 +749,63 @@ render_html("""
 </section>
 """)
 
-st.divider()
-st.header("📝 Crear cuenta")
-st.caption("El padre, madre o tutor realiza el registro inicial. Los hijos se agregan después de activar la cuenta.")
+
+# ── PLANES ────────────────────────────────────────────────────────────────────
+render_html("""
+<section id="planes" class="planes-section">
+    <div class="section-label">Planes</div>
+    <h2 class="section-title">Simple, <em>sin sorpresas.</em></h2>
+
+    <div class="planes-grid">
+        <div class="plan-card">
+            <div class="plan-name">Básico</div>
+            <div class="plan-price">$20.000</div>
+            <div class="plan-period">COP / mes · 1 estudiante</div>
+            <div class="plan-feat">⚡ 1 000 créditos mensuales</div>
+            <div class="plan-feat">📋 Diagnóstico adaptativo semanal</div>
+            <div class="plan-feat">💬 Tutor en las 5 materias</div>
+            <div class="plan-feat">📄 Exportación a PDF</div>
+            <div class="plan-feat">👨‍👩‍👧 Panel del padre</div>
+        </div>
+
+        <div class="plan-card destacado">
+            <span class="plan-badge">Más popular</span>
+            <div class="plan-name">Estándar</div>
+            <div class="plan-price">$30.000</div>
+            <div class="plan-period">COP / mes · 1 estudiante</div>
+            <div class="plan-feat">⚡ 2 000 créditos mensuales</div>
+            <div class="plan-feat">📋 Diagnóstico adaptativo semanal</div>
+            <div class="plan-feat">💬 Tutor en las 5 materias</div>
+            <div class="plan-feat">📄 Exportación a PDF</div>
+            <div class="plan-feat">📸 Análisis de imágenes incluido</div>
+        </div>
+
+        <div class="plan-card">
+            <div class="plan-name">Familia</div>
+            <div class="plan-price">$50.000</div>
+            <div class="plan-period">COP / mes · hasta 3 estudiantes</div>
+            <div class="plan-feat">⚡ 5 000 créditos compartidos</div>
+            <div class="plan-feat">📋 Diagnóstico por cada estudiante</div>
+            <div class="plan-feat">💬 Tutor en las 5 materias</div>
+            <div class="plan-feat">📄 Exportación a PDF</div>
+            <div class="plan-feat">📊 Leaderboard familiar</div>
+        </div>
+    </div>
+</section>
+""")
+
+
+# ── REGISTRO ─────────────────────────────────────────────────────────────────
+render_html("""
+<section id="registro" class="registro-shell">
+    <div class="registro-kicker">Alta de cuenta</div>
+    <h2 class="registro-title">📝 Crear cuenta</h2>
+    <p class="registro-sub">
+        El padre, madre o tutor realiza el registro inicial. Los hijos se agregan
+        después de activar la cuenta.
+    </p>
+</section>
+""")
 
 with st.form("form_registro"):
     st.subheader("1. Tus datos")
@@ -781,51 +920,6 @@ if submitted:
             st.error(f"Error al crear la cuenta: {exc}")
 
 
-# ── PLANES ────────────────────────────────────────────────────────────────────
-render_html("""
-<section id="planes" class="planes-section">
-    <div class="section-label">Planes</div>
-    <h2 class="section-title">Simple, <em>sin sorpresas.</em></h2>
-
-    <div class="planes-grid">
-        <div class="plan-card">
-            <div class="plan-name">Básico</div>
-            <div class="plan-price">$20.000</div>
-            <div class="plan-period">COP / mes · 1 estudiante</div>
-            <div class="plan-feat">⚡ 1 000 créditos mensuales</div>
-            <div class="plan-feat">📋 Diagnóstico adaptativo semanal</div>
-            <div class="plan-feat">💬 Tutor en las 5 materias</div>
-            <div class="plan-feat">📄 Exportación a PDF</div>
-            <div class="plan-feat">👨‍👩‍👧 Panel del padre</div>
-        </div>
-
-        <div class="plan-card destacado">
-            <span class="plan-badge">Más popular</span>
-            <div class="plan-name">Estándar</div>
-            <div class="plan-price">$30.000</div>
-            <div class="plan-period">COP / mes · 1 estudiante</div>
-            <div class="plan-feat">⚡ 2 000 créditos mensuales</div>
-            <div class="plan-feat">📋 Diagnóstico adaptativo semanal</div>
-            <div class="plan-feat">💬 Tutor en las 5 materias</div>
-            <div class="plan-feat">📄 Exportación a PDF</div>
-            <div class="plan-feat">📸 Análisis de imágenes incluido</div>
-        </div>
-
-        <div class="plan-card">
-            <div class="plan-name">Familia</div>
-            <div class="plan-price">$50.000</div>
-            <div class="plan-period">COP / mes · hasta 3 estudiantes</div>
-            <div class="plan-feat">⚡ 5 000 créditos compartidos</div>
-            <div class="plan-feat">📋 Diagnóstico por cada estudiante</div>
-            <div class="plan-feat">💬 Tutor en las 5 materias</div>
-            <div class="plan-feat">📄 Exportación a PDF</div>
-            <div class="plan-feat">📊 Leaderboard familiar</div>
-        </div>
-    </div>
-</section>
-""")
-
-
 # ── CTA FINAL ─────────────────────────────────────────────────────────────────
 render_html("""
 <section class="cta-section">
@@ -839,8 +933,7 @@ render_html("""
 
 col1, col2, col3 = st.columns([1, 1, 1])
 with col1:
-    if st.button("📝 Crear cuenta gratis", use_container_width=True):
-        st.info("El formulario de registro está en esta misma página, en la sección 'Crear cuenta'.")
+    render_html('<a class="quick-link-btn" href="#registro">📝 Crear cuenta gratis</a>')
 with col2:
     if st.button("🎓 Entrar a estudiar", use_container_width=True):
         st.switch_page("pages/estudiante.py")

@@ -19,6 +19,104 @@ from core.database import (
 st.set_page_config(page_title="Panel Padre - El Profe Saber", page_icon="👨‍👩‍👧")
 
 
+def _render_html(content: str) -> None:
+    if hasattr(st, "html"):
+        st.html(content)
+    else:
+        st.markdown(content, unsafe_allow_html=True)
+
+
+def _inject_theme_styles() -> None:
+    _render_html(
+        """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=DM+Sans:wght@400;500;700&display=swap');
+
+:root {
+    --azul: #0d2d4e;
+    --azul-m: #1a5080;
+    --naranja: #e8600a;
+    --acento: #e8600a;
+    --crema: #f5f0e8;
+    --hueso: #ede8de;
+    --tinta: #0d1f2d;
+    --gris: #5a7080;
+}
+
+.stApp {
+    background: radial-gradient(circle at 10% -10%, rgba(232,96,10,0.1), transparent 40%), var(--crema);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--tinta);
+}
+
+h1, h2, h3 {
+    font-family: 'Fraunces', serif !important;
+    color: var(--azul) !important;
+}
+
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0b2743 0%, #113a5f 100%);
+}
+
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+    color: #f5f0e8 !important;
+}
+
+[data-testid="stForm"] {
+    background: #fff;
+    border: 1px solid rgba(13,45,78,0.14);
+    border-radius: 14px;
+    padding: 1rem 1rem 1.2rem;
+}
+
+.stButton > button,
+[data-testid="stFormSubmitButton"] > button {
+    background: var(--acento) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 6px 18px rgba(232,96,10,0.28) !important;
+}
+
+.stButton > button:hover,
+[data-testid="stFormSubmitButton"] > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(232,96,10,0.34) !important;
+}
+
+[data-testid="stCaptionContainer"] p {
+    color: var(--azul-m) !important;
+}
+
+div[data-baseweb="input"] input,
+div[data-baseweb="select"] > div {
+    border-radius: 10px !important;
+    border: 1px solid rgba(13,45,78,0.2) !important;
+}
+
+[data-testid="stMetric"] {
+    background: #fff;
+    border: 1px solid rgba(13,45,78,0.12);
+    border-radius: 12px;
+    padding: 0.5rem 0.7rem;
+}
+
+[data-testid="stDataFrame"] {
+    border: 1px solid rgba(13,45,78,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+</style>
+        """
+    )
+
+
 def _init_parent_session():
     if "parent_autenticado" not in st.session_state:
         st.session_state.parent_autenticado = False
@@ -327,6 +425,7 @@ def _render_dashboard():
 
 
 _init_parent_session()
+_inject_theme_styles()
 
 if st.session_state.parent_autenticado:
     _render_dashboard()

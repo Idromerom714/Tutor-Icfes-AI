@@ -1,0 +1,14 @@
+[[pages]]
+path = "app.py"
+name = "Padres"
+icon = "👨‍👩‍👧"
+
+[[pages]]
+path = "pages/estudiante.py"
+name = "Estudiantes"
+icon = "🎓"
+
+[[pages]]
+path = "pages/presentacion.py"
+name = "Presentación"
+icon = "🚀"
