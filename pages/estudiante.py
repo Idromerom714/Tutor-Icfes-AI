@@ -131,6 +131,43 @@ div[data-baseweb="textarea"] textarea {
     border-radius: 12px;
     padding: 0.4rem;
 }
+
+[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] {
+    background: #fdfbf8;
+    border: 1px dashed rgba(13,45,78,0.4);
+}
+
+[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"] > div {
+    display: none;
+}
+
+[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"]::before {
+    content: "Arrastra y suelta tu imagen aquí";
+    display: block;
+    color: var(--azul);
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 0.2rem;
+}
+
+[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"]::after {
+    content: "o usa el botón para elegir un archivo";
+    display: block;
+    color: #1f3f5e;
+    font-size: 0.92rem;
+    text-align: center;
+}
+
+[data-testid="stFileUploader"] button[kind="secondary"] p {
+    font-size: 0;
+}
+
+[data-testid="stFileUploader"] button[kind="secondary"] p::after {
+    content: "Elegir imagen";
+    font-size: 0.95rem;
+    color: #0d2d4e;
+    font-weight: 700;
+}
 </style>
         """
     )
@@ -148,6 +185,7 @@ def _init_session():
         "mensajes_actuales":    [],
         "materia_activa":       "Matemáticas",
         "materia_anterior":     None,
+        "uploader_nonce":       0,
         # Diagnóstico
         "modo_diagnostico":     False,
         "preguntas_diag":       [],      # sin respuesta_correcta (para mostrar)
@@ -546,7 +584,14 @@ def _render_chat(user, estudiante, creditos):
             st.markdown(msg["content"])
 
     st.divider()
-    foto          = st.file_uploader("📸 Añadir imagen (opcional)", type=["jpg", "jpeg", "png"])
+    st.markdown("**📸 Carga una imagen (opcional)**")
+    st.caption("Formatos permitidos: JPG, JPEG y PNG.")
+    foto          = st.file_uploader(
+        "Carga una imagen para acompañar tu pregunta",
+        type=["jpg", "jpeg", "png"],
+        label_visibility="collapsed",
+        key=f"foto_chat_{st.session_state.uploader_nonce}",
+    )
     pregunta_input = st.chat_input("Escribe tu duda...")
 
     # Sugerencia clickeada
@@ -586,6 +631,9 @@ def _render_chat(user, estudiante, creditos):
 
     st.session_state.mensajes_actuales.append({"role": "user",      "content": pregunta_input})
     st.session_state.mensajes_actuales.append({"role": "assistant", "content": respuesta})
+
+    if foto:
+        st.session_state.uploader_nonce += 1
 
     titulo = generar_titulo_chat(pregunta_input) if not st.session_state.chat_id_actual else None
     res_db = guardar_o_actualizar_chat(
