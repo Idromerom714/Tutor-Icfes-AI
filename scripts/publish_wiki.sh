@@ -14,6 +14,21 @@ fi
 
 wiki_repo="https://github.com/${owner}/${repo}.wiki.git"
 workspace_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+wiki_src_dir="${workspace_root}/docs/wiki"
+
+if [[ ! -d "$wiki_src_dir" ]]; then
+  echo "No se encontró el directorio de wiki fuente: ${wiki_src_dir}"
+  exit 1
+fi
+
+# Evita publicar documentación desactualizada con rutas ya eliminadas.
+if grep -R -n -E 'pages/registro\.py|/pages/registro\.py' "$wiki_src_dir" >/dev/null 2>&1; then
+  echo "Se detectaron referencias obsoletas a pages/registro.py en docs/wiki."
+  echo "Actualiza la documentación antes de publicar la wiki."
+  echo
+  grep -R -n -E 'pages/registro\.py|/pages/registro\.py' "$wiki_src_dir" || true
+  exit 1
+fi
 
 if ! git ls-remote "$wiki_repo" >/dev/null 2>&1; then
   echo "No se pudo acceder a: ${wiki_repo}"
@@ -28,7 +43,7 @@ tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT
 
 git clone "$wiki_repo" "$tmp_dir/wiki"
-rsync -av --delete --exclude='.git' "${workspace_root}/docs/wiki/" "$tmp_dir/wiki/"
+rsync -av --delete --exclude='.git' "${wiki_src_dir}/" "$tmp_dir/wiki/"
 
 if [[ -n $(git -C "$tmp_dir/wiki" status --porcelain) ]]; then
   git -C "$tmp_dir/wiki" add .

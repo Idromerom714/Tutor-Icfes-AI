@@ -1,4 +1,8 @@
 import streamlit as st
+import re
+
+from core.auth import hashear_pin
+from core.database import supabase_admin as supabase
 
 
 def render_html(content: str) -> None:
@@ -7,6 +11,14 @@ def render_html(content: str) -> None:
         st.html(content)
     else:
         st.markdown(content, unsafe_allow_html=True)
+
+
+def email_valido(email):
+    return re.match(r"[^@]+@[^@]+\.[^@]+", email)
+
+
+def telefono_valido(telefono):
+    return re.match(r"^[0-9]{10}$", telefono)
 
 st.set_page_config(
     page_title="El Profe Saber — ICFES con IA",
@@ -628,7 +640,7 @@ render_html("""
             <div class="step-dot"></div>
             <div class="step-num">01</div>
             <div class="step-title">Regístrate</div>
-            <p class="step-desc">El padre crea la cuenta, registra al estudiante y define su PIN. Solo una vez.</p>
+            <p class="step-desc">El padre crea la cuenta y define su PIN. La activación se valida por el equipo antes de habilitar el acceso.</p>
         </div>
         <div class="step">
             <div class="step-dot"></div>
@@ -651,6 +663,122 @@ render_html("""
     </div>
 </section>
 """)
+
+st.divider()
+st.header("📝 Crear cuenta")
+st.caption("El padre, madre o tutor realiza el registro inicial. Los hijos se agregan después de activar la cuenta.")
+
+with st.form("form_registro"):
+    st.subheader("1. Tus datos")
+    nombre = st.text_input("Nombre completo *")
+    email = st.text_input("Correo electrónico *")
+    telefono = st.text_input("Teléfono (10 dígitos) *")
+    pin = st.text_input("PIN de acceso (mínimo 6 dígitos) *", type="password")
+    pin_confirmar = st.text_input("Confirmar PIN *", type="password")
+
+    st.divider()
+    st.subheader("2. Autorización de datos")
+
+    with st.expander("📄 Leer Política de Tratamiento de Datos (obligatorio)", expanded=False):
+        st.markdown("""
+        **POLÍTICA DE TRATAMIENTO DE DATOS PERSONALES — Tutor ICFES v1.0**
+
+        **Responsable:** Iván Romero | ivanromero714@gmail.com | Medellín, Colombia
+
+        **Datos que recolectamos:** nombre, correo, teléfono, dirección IP del padre/tutor;
+        nombre, grado e historial de conversaciones del estudiante.
+
+        **Finalidad:** prestar el servicio de tutoría para preparación al ICFES, gestionar
+        la cuenta y medir el progreso académico.
+
+        **Proveedores tecnológicos:** Supabase (base de datos), OpenRouter (modelos de IA),
+        Pinecone (búsqueda semántica). No vendemos ni cedemos datos a terceros.
+
+        **Retención:** datos de cuenta: mientras la cuenta esté activa + 6 meses.
+        Historial de conversaciones: máximo 12 meses. Métricas anonimizadas: indefinidamente.
+
+        **Derechos:** puede acceder, corregir, suprimir o revocar el consentimiento escribiendo
+        a ivanromero714@gmail.com. Tiempo de respuesta: 15 días hábiles.
+
+        **Menores de edad:** el tratamiento de datos del estudiante solo procede con
+        autorización expresa del padre, madre o tutor legal, conforme al artículo 7
+        de la Ley 1581 de 2012.
+
+        Para la política completa escríbenos al correo indicado.
+        """)
+
+    acepto_politica = st.checkbox(
+        "He leído y acepto la Política de Tratamiento de Datos Personales (Versión 1.0) *"
+    )
+    soy_tutor = st.checkbox(
+        "Declaro ser padre, madre o tutor legal del menor que registraré en la plataforma *"
+    )
+
+    submitted = st.form_submit_button("✅ Crear cuenta", use_container_width=True)
+
+if submitted:
+    errores = []
+
+    if not nombre:
+        errores.append("Nombre completo es obligatorio.")
+    if not email_valido(email):
+        errores.append("Correo electrónico no válido.")
+    if not telefono_valido(telefono):
+        errores.append("Teléfono debe tener 10 dígitos.")
+    if len(pin) < 6:
+        errores.append("El PIN debe tener mínimo 6 dígitos.")
+    if pin != pin_confirmar:
+        errores.append("Los PINs no coinciden.")
+    if not acepto_politica:
+        errores.append("Debes aceptar la política de tratamiento de datos.")
+    if not soy_tutor:
+        errores.append("Debes confirmar que eres padre, madre o tutor legal.")
+
+    if errores:
+        for err in errores:
+            st.error(f"• {err}")
+    else:
+        try:
+            existente = supabase.table("padres").select("id").eq("email", email).execute()
+
+            if existente.data:
+                st.error("Ya existe una cuenta con ese correo electrónico.")
+            else:
+                pin_hash = hashear_pin(pin)
+                res_padre = supabase.table("padres").insert(
+                    {
+                        "nombre": nombre,
+                        "email": email,
+                        "telefono": telefono,
+                        "pin": pin_hash,
+                        "plan": "basico",
+                        "estado": "pendiente",
+                    }
+                ).execute()
+
+                padre_id = res_padre.data[0]["id"]
+
+                supabase.table("consentimientos").insert(
+                    {
+                        "padre_id": padre_id,
+                        "acepto_politica": True,
+                        "version_politica": "1.0",
+                        "canal": "web_registro",
+                    }
+                ).execute()
+
+                st.success(
+                    """
+                    ✅ ¡Registro exitoso!
+
+                    Tu cuenta está siendo revisada. Te notificaremos por correo
+                    cuando esté activa (generalmente en menos de 24 horas).
+                    """
+                )
+                st.info("💡 Una vez activa tu cuenta, podrás ingresar con tu correo y PIN.")
+
+        except Exception as exc:
+            st.error(f"Error al crear la cuenta: {exc}")
 
 
 # ── PLANES ────────────────────────────────────────────────────────────────────
@@ -712,7 +840,7 @@ render_html("""
 col1, col2, col3 = st.columns([1, 1, 1])
 with col1:
     if st.button("📝 Crear cuenta gratis", use_container_width=True):
-        st.switch_page("pages/registro.py")
+        st.info("El formulario de registro está en esta misma página, en la sección 'Crear cuenta'.")
 with col2:
     if st.button("🎓 Entrar a estudiar", use_container_width=True):
         st.switch_page("pages/estudiante.py")

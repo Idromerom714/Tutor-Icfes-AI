@@ -38,7 +38,7 @@ Guía express para empezar a estudiar en menos de 2 minutos:
 ## 🗂️ Estructura de páginas (Streamlit)
 
 - `app.py`: Panel principal del padre (login, creación de hijos, leaderboard, progreso y energía por rango).
-- `pages/registro.py`: Registro de cuenta padre + primer hijo.
+- `pages/presentacion.py`: Landing, planes y formulario de registro de cuenta padre/tutor.
 - `pages/estudiante.py`: Entrada de estudiantes y entorno de estudio/chat.
 
 ## 📑 Tabla de Contenidos
@@ -109,8 +109,9 @@ Tutor-Icfes-AI sigue una arquitectura de **tres capas** con desacoplamiento entr
 ┌────────────────────────────────────────────────────────────┐
 │                    PRESENTACIÓN (Streamlit)                 │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │   app.py     │  │ registro.py  │  │   pages/     │     │
-│  │  (Chat UI)   │  │ (Sign-up)    │  │ (Historial)  │     │
+│  │   app.py     │  │presentacion.py│ │estudiante.py │     │
+│  │(Panel padre) │  │ (Landing +   │  │   (Chat)     │     │
+│  │              │  │   Sign-up)   │  │              │     │
 │  └──────────────┘  └──────────────┘  └──────────────┘     │
 └───────────────────────────┬────────────────────────────────┘
                             │
@@ -179,7 +180,7 @@ Tutor-Icfes-AI sigue una arquitectura de **tres capas** con desacoplamiento entr
 | Módulo | Ubicación | Responsabilidad | Dependencias clave |
 |--------|-----------|-----------------|-------------------|
 | **Interfaz principal** | `app.py` | Orquestación del chat, gestión de sesión, UI | Streamlit, todos los módulos core/ |
-| **Registro** | `pages/registro.py` | Formulario de alta (padre + estudiante + consentimiento) | Streamlit, core/database.py, core/auth.py |
+| **Presentación + registro** | `pages/presentacion.py` | Landing comercial y formulario de alta (padre/tutor + consentimiento) | Streamlit, core/database.py, core/auth.py |
 | **Autenticación** | `core/auth.py` | Hashing y verificación de PIN con bcrypt | bcrypt, Supabase |
 | **Base de datos** | `core/database.py` | CRUD de usuarios, chats, estudiantes, créditos | Supabase (cliente dual: normal + admin) |
 | **RAG** | `core/rag_search.py` | Generación de embeddings y búsqueda vectorial | OpenAI, Pinecone |
@@ -561,15 +562,15 @@ Esta guía está pensada para padres/tutores y estudiantes que usarán la aplica
 
 1. Abre la aplicación en tu navegador (por ejemplo, `http://localhost:8501` en entorno local).
 2. Ingresa con tu **correo** y **PIN**.
-3. Si es tu primera vez, crea la cuenta desde la página de registro.
+3. Si es tu primera vez, crea la cuenta desde la sección **Crear cuenta** en la página de presentación.
 
 ### 2) Registro inicial (primera vez)
 
-1. Ve a la sección de registro.
+1. Ve a la página de presentación y baja a la sección **Crear cuenta**.
 2. Completa los datos del padre/tutor.
-3. Registra al estudiante (nombre y grado).
-4. Acepta la política de datos/consentimiento.
-5. Guarda el formulario y vuelve al login.
+3. Acepta la política de datos/consentimiento.
+4. Guarda el formulario y espera la activación de la cuenta.
+5. Después de activar la cuenta, registra los estudiantes desde el panel del padre.
 
 ### 3) Selección de estudiante y materia
 

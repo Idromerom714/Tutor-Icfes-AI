@@ -29,7 +29,7 @@ flowchart TD
 ## Componentes principales
 
 - UI: [app.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/app.py)
-- Registro: [pages/registro.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/pages/registro.py)
+- Presentación y registro: [pages/presentacion.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/pages/presentacion.py)
 - IA: [core/ai_engine.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/core/ai_engine.py)
 - RAG: [core/rag_search.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/core/rag_search.py)
 - DB: [core/database.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/core/database.py)

@@ -14,7 +14,7 @@ Bienvenido a la wiki técnica y operativa del proyecto. Esta documentación est�
 ## Mapa rápido del código
 
 - Punto de entrada: [app.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/app.py)
-- Registro: [pages/registro.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/pages/registro.py)
+- Presentación y registro: [pages/presentacion.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/pages/presentacion.py)
 - Motor de IA: [core/ai_engine.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/core/ai_engine.py)
 - RAG: [core/rag_search.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/core/rag_search.py)
 - Base de datos: [core/database.py](https://github.com/Idromerom714/Tutor-Icfes-AI/blob/main/core/database.py)
@@ -25,7 +25,8 @@ Bienvenido a la wiki técnica y operativa del proyecto. Esta documentación est�
 ## Estado actual
 
 - Aplicación principal operativa con login, chat, historial y exportación PDF.
-- Registro padre/estudiante con consentimiento en `pages/registro.py`.
+- Registro inicial de padre/tutor con consentimiento en `pages/presentacion.py`.
+- Registro de hijos posterior a la activación, desde el panel del padre en `app.py`.
 - Persistencia de chats y créditos en Supabase.
 - RAG activo con OpenAI Embeddings + Pinecone por `namespace` de materia.
 - Suite de pruebas renovada: 57 tests en verde.

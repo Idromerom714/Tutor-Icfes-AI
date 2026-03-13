@@ -77,7 +77,7 @@ def _render_login():
     col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("¿No tienes cuenta? Regístrate →", use_container_width=True):
-            st.switch_page("pages/registro.py")
+            st.switch_page("pages/presentacion.py")
     with col2:
         if st.button("Panel del padre →", use_container_width=True):
             st.switch_page("app.py")

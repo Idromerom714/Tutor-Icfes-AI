@@ -46,7 +46,7 @@ def _render_login_padre():
     col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("📝 Ir a Registro", use_container_width=True):
-            st.switch_page("pages/registro.py")
+            st.switch_page("pages/presentacion.py")
     with col2:
         if st.button("🎓 Entrada Estudiantes", use_container_width=True):
             st.switch_page("pages/estudiante.py")
@@ -112,7 +112,7 @@ def _render_sidebar(user):
         if st.button("🎓 Ir a Entrada Estudiantes", use_container_width=True):
             st.switch_page("pages/estudiante.py")
         if st.button("📝 Ir a Registro", use_container_width=True):
-            st.switch_page("pages/registro.py")
+            st.switch_page("pages/presentacion.py")
         if st.button("🚀 Ver Presentacion", use_container_width=True):
             st.switch_page("pages/presentacion.py")
         if st.button("🚪 Cerrar sesion", use_container_width=True):

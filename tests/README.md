@@ -121,6 +121,6 @@ El fixture `mock_streamlit_and_supabase` se aplica automáticamente a todos los 
 ## Próximos Pasos
 
 1. Agregar tests de integración con datos reales (marcados con `@pytest.mark.integration`)
-2. Implementar tests para `pages/registro.py`
+2. Implementar tests para el formulario de alta en `pages/presentacion.py`
 3. Agregar cobertura mínima del 80%
 4. Agregar tests de performance para RAG

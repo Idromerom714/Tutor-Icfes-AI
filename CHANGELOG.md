@@ -6,6 +6,18 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.
 
 ## [Unreleased]
 
+### Cambiado - 2026-03-13
+
+#### Registro y navegación
+- 🧭 El formulario de alta de cuenta fue movido de `pages/registro.py` a `pages/presentacion.py`.
+- 👨‍👩‍👧 El registro inicial ahora crea solo la cuenta del padre/tutor; los hijos se agregan después de la activación.
+- 🔗 Navegación actualizada en `app.py` y `pages/estudiante.py` para dirigir el registro a la presentación.
+
+### Eliminado - 2026-03-13
+
+#### Páginas
+- 🗑️ Eliminada la página `pages/registro.py`.
+
 ### Agregado - 2026-03-07
 
 #### Diagnóstico y personalización pedagógica
