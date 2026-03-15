@@ -71,6 +71,11 @@ h1, h2, h3 {
     color: var(--azul) !important;
 }
 
+section[data-testid="stSidebar"] {
+    display: block !important;
+    visibility: visible !important;
+}
+
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #0b2743 0%, #113a5f 100%);
 }
@@ -80,8 +85,15 @@ h1, h2, h3 {
 [data-testid="stSidebar"] h3,
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] label,
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] li,
+[data-testid="stSidebar"] a,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"],
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] * {
     color: #f5f0e8 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 [data-testid="stChatMessage"] {
@@ -123,6 +135,22 @@ h1, h2, h3 {
     border: 1px solid rgba(13,45,78,0.14);
     border-radius: 14px;
     padding: 1rem 1rem 1.2rem;
+}
+
+/* Evita que estilos globales previos oculten nombres de campos en login y formularios. */
+[data-testid="stForm"] label,
+[data-testid="stForm"] [data-testid="stWidgetLabel"],
+[data-testid="stForm"] [data-testid="stWidgetLabel"] div,
+[data-testid="stForm"] [data-testid="stWidgetLabel"] p,
+[data-testid="stForm"] [data-testid="stWidgetLabel"] span,
+[data-testid="stForm"] .stTextInput label,
+[data-testid="stForm"] .stSelectbox label,
+[data-testid="stForm"] .stNumberInput label,
+[data-testid="stForm"] .stTextArea label,
+[data-testid="stForm"] .stCheckbox label {
+    color: var(--azul) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 .stButton > button,
@@ -192,6 +220,18 @@ div[data-baseweb="textarea"] textarea {
     font-size: 0.95rem;
     color: #0d2d4e;
     font-weight: 700;
+}
+
+/* Asegura que las opciones del diagnóstico (radio) siempre sean legibles en el área principal. */
+section[data-testid="stMain"] [data-testid="stRadio"] label,
+section[data-testid="stMain"] [data-testid="stRadio"] span,
+section[data-testid="stMain"] [data-testid="stRadio"] p,
+section[data-testid="stMain"] [data-testid="stRadio"] [data-testid="stMarkdownContainer"],
+section[data-testid="stMain"] [data-testid="stWidgetLabel"],
+section[data-testid="stMain"] [data-testid="stWidgetLabel"] * {
+    color: #0d1f2d !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 </style>
         """

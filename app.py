@@ -55,6 +55,11 @@ h1, h2, h3 {
     color: var(--azul) !important;
 }
 
+section[data-testid="stSidebar"] {
+    display: block !important;
+    visibility: visible !important;
+}
+
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #0b2743 0%, #113a5f 100%);
 }
@@ -64,8 +69,15 @@ h1, h2, h3 {
 [data-testid="stSidebar"] h3,
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] label,
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] li,
+[data-testid="stSidebar"] a,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"],
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] * {
     color: #f5f0e8 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 [data-testid="stForm"] {
@@ -73,6 +85,22 @@ h1, h2, h3 {
     border: 1px solid rgba(13,45,78,0.14);
     border-radius: 14px;
     padding: 1rem 1rem 1.2rem;
+}
+
+/* Evita que estilos de otras páginas dejen invisibles los labels del formulario. */
+[data-testid="stForm"] label,
+[data-testid="stForm"] [data-testid="stWidgetLabel"],
+[data-testid="stForm"] [data-testid="stWidgetLabel"] div,
+[data-testid="stForm"] [data-testid="stWidgetLabel"] p,
+[data-testid="stForm"] [data-testid="stWidgetLabel"] span,
+[data-testid="stForm"] .stTextInput label,
+[data-testid="stForm"] .stSelectbox label,
+[data-testid="stForm"] .stNumberInput label,
+[data-testid="stForm"] .stTextArea label,
+[data-testid="stForm"] .stCheckbox label {
+    color: var(--azul) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 .stButton > button,

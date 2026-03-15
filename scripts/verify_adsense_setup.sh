@@ -32,6 +32,13 @@ fi
 BASE="${BASE%/}"
 
 echo "[2/3] Consultando endpoint publico /ads.txt en $BASE"
+HEADERS="$(curl -sSI "$BASE/ads.txt" || true)"
+if echo "$HEADERS" | grep -qi 'location: https://share.streamlit.io/-/auth/app'; then
+  echo "ERROR: $BASE/ads.txt redirige al login de Streamlit (app privada)."
+  echo "Accion: cambia la app a publica en Streamlit Community Cloud y vuelve a verificar."
+  exit 1
+fi
+
 BODY="$(curl -fsSL "$BASE/ads.txt")"
 if [[ "$BODY" != *"$EXPECTED_LINE"* ]]; then
   echo "ERROR: $BASE/ads.txt no devuelve la linea esperada"
