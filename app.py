@@ -15,6 +15,7 @@ from core.database import (
     listar_chats_usuario,
     listar_consumo_energia,
 )
+from core.ads import render_adsense_slot_from_env
 
 st.set_page_config(page_title="Panel Padre - El Profe Saber", page_icon="👨‍👩‍👧")
 
@@ -213,6 +214,10 @@ def _render_sidebar(user):
             st.switch_page("pages/presentacion.py")
         if st.button("🚀 Ver Presentacion", use_container_width=True):
             st.switch_page("pages/presentacion.py")
+
+        if render_adsense_slot_from_env("ADSENSE_SLOT_APP", min_height=130):
+            st.caption("Publicidad")
+
         if st.button("🚪 Cerrar sesion", use_container_width=True):
             _logout_parent()
 

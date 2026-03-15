@@ -3,6 +3,7 @@ import re
 
 from core.auth import hashear_pin
 from core.database import supabase_admin as supabase
+from core.ads import render_adsense_slot_from_env
 
 
 def render_html(content: str) -> None:
@@ -615,7 +616,7 @@ render_html("""
     <span class="hero-badge">Para estudiantes de 10° y 11° · Colombia</span>
 
     <h1 class="hero-title">
-        Tu profe de ICFES.<br>
+        Socratiq, Tu profe de ICFES.<br>
         Siempre disponible,<br>
         <em>siempre personalizado.</em>
     </h1>
@@ -655,7 +656,7 @@ render_html("""
 # ── FEATURES ──────────────────────────────────────────────────────────────────
 render_html("""
 <section id="features" class="section" style="background:#fff;">
-    <div class="section-label">Qué hace diferente a El Profe Saber</div>
+    <div class="section-label">¿Qué hace diferente a Socratiq?</div>
     <h2 class="section-title">No te da la respuesta.<br><em>Te enseña a encontrarla.</em></h2>
 
     <div class="features-grid">
@@ -940,6 +941,9 @@ with col2:
 with col3:
     if st.button("👨‍👩‍👧 Panel del padre", use_container_width=True):
         st.switch_page("app.py")
+
+if render_adsense_slot_from_env("ADSENSE_SLOT_PRESENTACION", min_height=180):
+    st.caption("Publicidad")
 
 # ── FOOTER ───────────────────────────────────────────────────────────────────
 render_html("""

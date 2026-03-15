@@ -31,6 +31,7 @@ from core.diagnostic import (
     generar_preguntas_recomendadas,
     diagnostico_requiere_renovacion,
 )
+from core.ads import render_adsense_slot_from_env
 
 st.set_page_config(page_title="El Profe Saber — Estudiante", page_icon="🎓")
 
@@ -574,6 +575,10 @@ def _render_sidebar(user, estudiante):
             st.session_state.chat_id_actual   = None
             st.session_state.mensajes_actuales = []
             st.rerun()
+
+        st.divider()
+        if render_adsense_slot_from_env("ADSENSE_SLOT_ESTUDIANTE", min_height=130):
+            st.caption("Publicidad")
 
         st.divider()
         if st.button("🚪 Cerrar sesión", use_container_width=True):

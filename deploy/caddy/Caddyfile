@@ -1,0 +1,11 @@
+tu-dominio.com {
+    # Endpoint requerido por Google AdSense para verificar propiedad.
+    handle /ads.txt {
+        rewrite * /static/ads.txt
+        reverse_proxy 127.0.0.1:8501
+    }
+
+    handle {
+        reverse_proxy 127.0.0.1:8501
+    }
+}

@@ -347,6 +347,13 @@ PINECONE_INDEX_NAME = "icfes-index"
 SUPABASE_URL = "https://xxxxxxxxxxxx.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."  # Admin key
+
+# Google AdSense (opcional)
+ADSENSE_ENABLED = true
+ADSENSE_CLIENT_ID = "ca-pub-5888906096884160"
+ADSENSE_SLOT_APP = "1234567890"
+ADSENSE_SLOT_ESTUDIANTE = "1234567890"
+ADSENSE_SLOT_PRESENTACION = "1234567890"
 ```
 
 > ⚠️ **Importante**: Nunca commits este archivo al repositorio. Ya está incluido en `.gitignore`.
@@ -770,6 +777,34 @@ docker run -p 8501:8501 tutor-icfes-ai
 - **Puertos**: Streamlit usa puerto 8501 por defecto
 - **Logs**: Configurar logging adecuado para monitoreo en producción
 - **Seguridad**: Usar HTTPS en producción, configurar CORS apropiadamente
+
+### Verificación de propiedad para AdSense (ads.txt)
+
+El repositorio incluye la línea de verificación en dos ubicaciones:
+
+- `ads.txt` (raíz del proyecto)
+- `static/ads.txt` (servida por Streamlit en `/static/ads.txt` con `enableStaticServing = true`)
+
+Contenido configurado:
+
+```txt
+google.com, pub-5888906096884160, DIRECT, f08c47fec0942fa0
+```
+
+Para validación oficial de AdSense, la URL requerida suele ser `https://tu-dominio/ads.txt`.
+Si tu despliegue Streamlit no publica automáticamente la raíz, agrega una regla en tu proxy (Nginx/Caddy/Cloudflare) que mapee `/ads.txt` a `static/ads.txt`.
+
+Archivos listos en el repo:
+
+- `deploy/nginx/adsense-streamlit.conf`
+- `deploy/caddy/Caddyfile`
+
+Verificación automatizada:
+
+```bash
+./scripts/verify_adsense_setup.sh
+./scripts/verify_adsense_setup.sh https://tu-dominio.com
+```
 
 ---
 
