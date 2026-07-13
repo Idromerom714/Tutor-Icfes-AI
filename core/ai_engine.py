@@ -130,6 +130,11 @@ def _inferir_nivel_desde_diagnostico(diagnostico_resultado: Optional[Dict[str, o
     return "avanzado"
 
 
+def _falencias_materia(item: Dict[str, object]) -> List[str]:
+    """Normaliza nombres de claves de falencias para compatibilidad de datos."""
+    return item.get("subtemas_reforzar") or item.get("temas_reforzar") or []
+
+
 def construir_contexto_diagnostico(
     diagnostico_resultado: Optional[Dict[str, object]],
     materia_actual: str,
@@ -153,7 +158,7 @@ def construir_contexto_diagnostico(
     for item in resultados_por_materia:
         materia = item.get("materia", "General")
         porcentaje = item.get("porcentaje", 0)
-        temas_reforzar = item.get("temas_reforzar", [])
+        temas_reforzar = _falencias_materia(item)
         temas_txt = ", ".join(temas_reforzar[:3]) if temas_reforzar else "sin temas críticos"
         resumen_materias.append(f"- {materia}: {porcentaje}% | reforzar: {temas_txt}")
 
@@ -161,7 +166,7 @@ def construir_contexto_diagnostico(
     if foco_materia:
         foco_txt = (
             f"Materia actual {materia_actual}: {foco_materia.get('porcentaje', 0)}%. "
-            f"Temas prioritarios: {', '.join(foco_materia.get('temas_reforzar', [])[:3]) or 'ninguno específico'}."
+            f"Temas prioritarios: {', '.join(_falencias_materia(foco_materia)[:3]) or 'ninguno específico'}."
         )
     else:
         foco_txt = f"No hay datos específicos para {materia_actual}; extrapola desde debilidades globales."

@@ -9,6 +9,28 @@ import hashlib
 from core.database import supabase_admin as sb
 
 
+def _obtener_falencias_materia(item_materia: Dict) -> List[str]:
+    """Normaliza falencias por materia soportando claves antiguas y nuevas."""
+    falencias = item_materia.get("subtemas_reforzar") or item_materia.get("temas_reforzar") or []
+    return [str(t).strip() for t in falencias if str(t).strip()]
+
+
+def _prioridad_desde_porcentaje(porcentaje: float) -> str:
+    if porcentaje < 45:
+        return "alta"
+    if porcentaje < 75:
+        return "media"
+    return "mantenimiento"
+
+
+def _nivel_objetivo_desde_porcentaje(porcentaje: float) -> str:
+    if porcentaje < 45:
+        return "basico"
+    if porcentaje < 75:
+        return "intermedio"
+    return "avanzado"
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CONSULTAS AL BANCO DE PREGUNTAS (Supabase)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -381,7 +403,7 @@ def generar_recomendaciones_refuerzo(resultados_por_materia: List[Dict]) -> List
     for item in resultados_por_materia:
         materia    = item["materia"]
         porcentaje = float(item["porcentaje"])
-        subtemas   = item.get("subtemas_reforzar", [])
+        subtemas   = _obtener_falencias_materia(item)
 
         if porcentaje >= 80:
             recomendaciones.append(
@@ -435,7 +457,7 @@ def generar_preguntas_recomendadas(
             f"Evalúa mi nivel actual en {materia_actual} con un ejercicio breve.",
         ][:max_preguntas]
 
-    subtemas = datos.get("subtemas_reforzar", [])
+    subtemas = _obtener_falencias_materia(datos)
     if not subtemas:
         return [
             f"Quiero un reto de mayor nivel en {materia_actual}.",
@@ -474,7 +496,7 @@ def generar_plan_semanal(diagnostico_resultado: Optional[Dict]) -> List[Dict[str
     for i, dia in enumerate(dias):
         materia = materias_ciclo[i % len(materias_ciclo)]
         datos   = next((r for r in resultados if r.get("materia") == materia), {})
-        subtemas = datos.get("subtemas_reforzar", [])
+        subtemas = _obtener_falencias_materia(datos)
         objetivo = subtemas[0] if subtemas else "resolución de preguntas tipo caso"
         plan.append({
             "dia":       dia,
@@ -483,6 +505,108 @@ def generar_plan_semanal(diagnostico_resultado: Optional[Dict]) -> List[Dict[str
             "actividad": f"Resolver 3 preguntas guiadas de {materia} y cerrar con autoexplicación.",
         })
     return plan
+
+
+def generar_plan_estudio_personalizado(
+    diagnostico_resultado: Optional[Dict],
+    semanas: int = 4,
+) -> Dict[str, object]:
+    """
+    Construye un plan accionable por falencias detectadas en el diagnóstico.
+
+    Retorna estructura lista para UI con módulos por materia, prioridad,
+    objetivos semanales y criterios de seguimiento.
+    """
+    semanas_validas = max(1, min(int(semanas or 4), 12))
+
+    if not diagnostico_resultado:
+        return {
+            "duracion_semanas": semanas_validas,
+            "objetivo_general": "Completar diagnóstico para personalizar ruta de estudio.",
+            "modulos": [
+                {
+                    "materia": "General",
+                    "prioridad": "alta",
+                    "nivel_objetivo": "intermedio",
+                    "porcentaje_actual": 0.0,
+                    "falencias": ["Sin diagnóstico disponible"],
+                    "objetivo_aprendizaje": "Identificar fortalezas y vacíos de base.",
+                    "plan_semana": [
+                        "Semana 1: realizar diagnóstico y revisar retroalimentación.",
+                        "Semana 2: practicar 3 sesiones guiadas en materia prioritaria.",
+                    ],
+                    "indicadores": [
+                        "Completa diagnóstico inicial.",
+                        "Resuelve al menos 6 preguntas guiadas con autoexplicación.",
+                    ],
+                }
+            ],
+            "seguimiento": [
+                "Registrar aciertos por sesión.",
+                "Repetir diagnóstico cada 7 días para medir avance.",
+            ],
+        }
+
+    resultados = diagnostico_resultado.get("resultados_por_materia", []) or []
+    resultados_ordenados = sorted(resultados, key=lambda x: float(x.get("porcentaje", 0)))
+
+    modulos = []
+    for item in resultados_ordenados:
+        materia = str(item.get("materia", "General"))
+        porcentaje = float(item.get("porcentaje", 0))
+        falencias = _obtener_falencias_materia(item)
+        prioridad = _prioridad_desde_porcentaje(porcentaje)
+        nivel_objetivo = _nivel_objetivo_desde_porcentaje(porcentaje)
+
+        if not falencias:
+            falencias = ["Consolidar dominio con ejercicios de mayor complejidad"]
+
+        horas_semana = 4 if prioridad == "alta" else 3 if prioridad == "media" else 2
+        foco_1 = falencias[0]
+        foco_2 = falencias[1] if len(falencias) > 1 else falencias[0]
+
+        modulos.append(
+            {
+                "materia": materia,
+                "prioridad": prioridad,
+                "nivel_objetivo": nivel_objetivo,
+                "porcentaje_actual": porcentaje,
+                "horas_semana_sugeridas": horas_semana,
+                "falencias": falencias[:4],
+                "objetivo_aprendizaje": (
+                    f"Subir {materia} de {porcentaje:.1f}% a al menos "
+                    f"{min(90, porcentaje + (20 if prioridad == 'alta' else 12)):.1f}% "
+                    "mediante práctica guiada y autoexplicación."
+                ),
+                "plan_semana": [
+                    f"Semana 1: nivelación conceptual en {foco_1}.",
+                    f"Semana 2: práctica guiada de preguntas tipo ICFES en {foco_1} y {foco_2}.",
+                    "Semana 3: simulación cronometrada + revisión de errores frecuentes.",
+                    "Semana 4: refuerzo focal y mini evaluación de cierre.",
+                ][:semanas_validas],
+                "indicadores": [
+                    "Al menos 3 sesiones por semana con el tutor.",
+                    "Tasa de acierto semanal >= 70% en práctica guiada.",
+                    "Reducción de errores repetidos en subtemas priorizados.",
+                ],
+            }
+        )
+
+    objetivo_general = (
+        "Fortalecer las competencias con menor desempeño y consolidar las fuertes "
+        f"en un horizonte de {semanas_validas} semanas."
+    )
+
+    return {
+        "duracion_semanas": semanas_validas,
+        "objetivo_general": objetivo_general,
+        "modulos": modulos,
+        "seguimiento": [
+            "Cerrar cada sesión con una autoexplicación de 3 ideas clave.",
+            "Monitorear porcentaje por materia semanalmente.",
+            "Aplicar diagnóstico de seguimiento al día 7.",
+        ],
+    }
 
 
 def diagnostico_requiere_renovacion(

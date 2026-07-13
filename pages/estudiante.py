@@ -27,6 +27,7 @@ from core.diagnostic import (
     guardar_diagnostico,
     guardar_respuestas,
     generar_plan_semanal,
+    generar_plan_estudio_personalizado,
     obtener_materia_prioritaria,
     generar_preguntas_recomendadas,
     diagnostico_requiere_renovacion,
@@ -515,6 +516,28 @@ def _render_resultado_diagnostico():
     plan = generar_plan_semanal(resultado)
     for dia in plan[:4]:
         st.markdown(f"**{dia['dia']}** · {dia['materia']}: {dia['objetivo']}")
+
+    st.subheader("🧭 Plan de estudio personalizado")
+    plan_estudio = generar_plan_estudio_personalizado(resultado, semanas=4)
+    st.markdown(f"**Objetivo general:** {plan_estudio['objetivo_general']}")
+
+    for modulo in plan_estudio.get("modulos", [])[:5]:
+        prioridad = str(modulo.get("prioridad", "media")).capitalize()
+        materia = modulo.get("materia", "General")
+        porcentaje = modulo.get("porcentaje_actual", 0)
+        st.markdown(f"### {materia} · Prioridad {prioridad} ({porcentaje}%)")
+
+        falencias = modulo.get("falencias", [])
+        if falencias:
+            st.markdown("**Falencias a reforzar:** " + ", ".join(falencias[:4]))
+
+        st.markdown("**Meta:** " + str(modulo.get("objetivo_aprendizaje", "")))
+
+        pasos = modulo.get("plan_semana", [])
+        for paso in pasos:
+            st.markdown(f"- {paso}")
+
+    st.caption("Seguimiento recomendado: " + " · ".join(plan_estudio.get("seguimiento", [])[:3]))
 
     if st.button("🚀 Ir al chat a estudiar", use_container_width=True):
         st.session_state.resultado_diag = None
